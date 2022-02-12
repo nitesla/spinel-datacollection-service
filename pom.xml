@@ -131,7 +131,7 @@
 
 		<dependency>
 			<groupId>com.spinel.core</groupId>
-			<artifactId>sspinel-datacollection-core</artifactId>
+			<artifactId>spinel-datacollection-core</artifactId>
 			<version>1.0</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/javax.validation/validation-api -->

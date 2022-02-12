@@ -7,11 +7,13 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="spinel-datacollection-service" />
         <module name="sabi-logistic-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="sabi-logistic-service" target="1.8" />
+      <module name="spinel-datacollection-service" target="1.5" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
