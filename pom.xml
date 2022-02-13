@@ -9,7 +9,7 @@
 		<version>2.1.6.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.spinel.service</groupId>
+	<groupId>com.spinel.datacollection.service</groupId>
 	<artifactId>spinel-datacollection-service</artifactId>
 	<version>1.0</version>
 	<name>spinel-datacollection-service</name>
@@ -130,7 +130,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.spinel.core</groupId>
+			<groupId>com.spinel.datacollection.core</groupId>
 			<artifactId>spinel-datacollection-core</artifactId>
 			<version>1.0</version>
 		</dependency>
