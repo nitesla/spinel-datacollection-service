@@ -13,7 +13,7 @@
 	<artifactId>spinel-datacollection-service</artifactId>
 	<version>1.0</version>
 	<name>spinel-datacollection-service</name>
-	<description>spinel-datacollection-service</description>
+	<description>service</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
