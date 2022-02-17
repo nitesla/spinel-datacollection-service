@@ -1,20 +1,21 @@
-package com.spinel.datacollection.service.services;
+package com.sabi.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.sabi.datacollection.core.dto.request.LGADto;
+import com.sabi.datacollection.core.dto.response.LGAResponseDto;
+import com.sabi.datacollection.core.models.LGA;
+import com.sabi.datacollection.core.models.State;
+import com.sabi.datacollection.service.repositories.LGARepository;
 import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
 import com.sabi.framework.utils.CustomResponseCode;
-import com.spinel.datacollection.core.dto.request.LGADto;
-import com.spinel.datacollection.core.dto.response.LGAResponseDto;
-import com.spinel.datacollection.core.models.LGA;
-import com.spinel.datacollection.core.models.State;
-import com.spinel.datacollection.service.helper.Validations;
-import com.spinel.datacollection.service.repositories.LGARepository;
-import com.spinel.datacollection.service.repositories.StateRepository;
+
+import com.sabi.datacollection.service.helper.Validations;
+import com.sabi.datacollection.service.repositories.StateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;

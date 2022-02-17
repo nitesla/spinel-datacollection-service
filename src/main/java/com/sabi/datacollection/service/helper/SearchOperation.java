@@ -1,4 +1,4 @@
-package com.spinel.datacollection.service.helper;
+package com.sabi.datacollection.service.helper;
 
 public enum SearchOperation {
     GREATER_THAN,
