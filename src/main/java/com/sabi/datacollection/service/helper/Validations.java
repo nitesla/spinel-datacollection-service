@@ -1,23 +1,20 @@
 package com.sabi.datacollection.service.helper;
 
 
-import com.sabi.datacollection.core.dto.request.BankDto;
-import com.sabi.datacollection.core.dto.request.CountryDto;
-import com.sabi.datacollection.core.dto.request.LGADto;
-import com.sabi.datacollection.core.dto.request.StateDto;
+import com.sabi.datacollection.core.dto.request.*;
 import com.sabi.datacollection.core.models.Country;
+import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.repositories.CountryRepository;
 import com.sabi.datacollection.service.repositories.LGARepository;
+import com.sabi.datacollection.service.repositories.StateRepository;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.repositories.RoleRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.utils.CustomResponseCode;
-import com.sabi.datacollection.service.repositories.BankRepository;
-import com.sabi.datacollection.service.repositories.StateRepository;
+import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -33,8 +30,6 @@ public class Validations {
     private LGARepository lgaRepository;
     private UserRepository userRepository;
 
-    @Autowired
-    private BankRepository bankRepository;
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository) {
         this.roleRepository = roleRepository;
@@ -92,16 +87,58 @@ public class Validations {
         return encodedString;
     }
 
-    public void validateBank(BankDto bankDto) {
-        String valName = bankDto.getName();
-        char valCharName = valName.charAt(0);
-        if (Character.isDigit(valCharName)){
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name can not start with a number");
-        }
-        if (bankDto.getName() == null || bankDto.getName().trim().isEmpty())
+    public void validateEnumerator(EnumeratorSignUpDto enumerator){
+        if (enumerator.getIsCorp() == false && (enumerator.getFirstName() == null || enumerator.getFirstName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (enumerator.getIsCorp() == false && (enumerator.getFirstName().length() < 2 || enumerator.getFirstName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+        if (enumerator.getIsCorp() == false && (enumerator.getLastName() == null || enumerator.getLastName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (enumerator.getIsCorp() == false && (enumerator.getLastName().length() < 2 || enumerator.getLastName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
+
+        if (enumerator.getEmail() == null || enumerator.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
+        if (!Utility.validEmail(enumerator.getEmail().trim()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
+        if (enumerator.getPhone() == null || enumerator.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
+        if (enumerator.getPhone().length() < 8 || enumerator.getPhone().length() > 14)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
+        if (!Utility.isNumeric(enumerator.getPhone()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
+        if (enumerator.getIsCorp() == true && (enumerator.getCorporateName() == null || enumerator.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (bankDto.getCode() == null || bankDto.getCode().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Bank code cannot be empty");
+    }
+
+    public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
+        if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+
+        if (enumeratorPropertiesDto.getAddress() == null || enumeratorPropertiesDto.getAddress().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Address cannot be empty");
+        LGA lga = lgaRepository.findById(enumeratorPropertiesDto.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid LGA id!"));
+        if (enumeratorPropertiesDto.getPhone() == null || enumeratorPropertiesDto.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone cannot be empty");
+        if (enumeratorPropertiesDto.getEmail() == null || enumeratorPropertiesDto.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
+    }
+
+    public void validateEnumeratorUpdate(EnumeratorDto enumeratorPropertiesDto) {
+        if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+
+        if (enumeratorPropertiesDto.getAddress() == null || enumeratorPropertiesDto.getAddress().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Address cannot be empty");
+        LGA lga = lgaRepository.findById(enumeratorPropertiesDto.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid LGA id!"));
+        if (enumeratorPropertiesDto.getPhone() == null || enumeratorPropertiesDto.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone cannot be empty");
+        if (enumeratorPropertiesDto.getEmail() == null || enumeratorPropertiesDto.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
     }
 
 }
