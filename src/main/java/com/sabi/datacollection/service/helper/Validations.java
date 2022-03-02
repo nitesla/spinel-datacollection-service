@@ -141,6 +141,39 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
     }
 
+    public void validateOrganisationType(OrganisationTypeDto organisationTypeDto) {
+        if (organisationTypeDto.getName() == null && (organisationTypeDto.getName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (organisationTypeDto.getDescription() == null && (organisationTypeDto.getDescription().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
+    }
+
+    public void validateProjectOwnerSignUp(ProjectOwnerSignUpDto projectOwnerSignUp) {
+        if (projectOwnerSignUp.getIsCorp() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is Corp cannot be empty");
+        if (projectOwnerSignUp.getIsCorp() == false && (projectOwnerSignUp.getFirstName() == null || projectOwnerSignUp.getFirstName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (projectOwnerSignUp.getIsCorp() == false && (projectOwnerSignUp.getFirstName().length() < 2 || projectOwnerSignUp.getFirstName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+        if (projectOwnerSignUp.getIsCorp() == false && (projectOwnerSignUp.getLastName() == null || projectOwnerSignUp.getLastName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (projectOwnerSignUp.getIsCorp() == false && (projectOwnerSignUp.getLastName().length() < 2 || projectOwnerSignUp.getLastName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
+
+        if (projectOwnerSignUp.getEmail() == null || projectOwnerSignUp.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
+        if (!Utility.validEmail(projectOwnerSignUp.getEmail().trim()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
+        if (projectOwnerSignUp.getPhone() == null || projectOwnerSignUp.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
+        if (projectOwnerSignUp.getPhone().length() < 8 || projectOwnerSignUp.getPhone().length() > 14)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
+        if (!Utility.isNumeric(projectOwnerSignUp.getPhone()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
+        if (projectOwnerSignUp.getIsCorp() == true && (projectOwnerSignUp.getCorporateName() == null || projectOwnerSignUp.getCorporateName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
+    }
+
 }
 
 
