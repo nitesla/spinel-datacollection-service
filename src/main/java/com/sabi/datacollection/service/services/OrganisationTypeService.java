@@ -1,5 +1,6 @@
 package com.sabi.datacollection.service.services;
 
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.OrganisationTypeDto;
 import com.sabi.datacollection.core.dto.response.OrganisationTypeResponseDto;
 import com.sabi.datacollection.core.models.OrganisationType;
@@ -81,13 +82,13 @@ public class OrganisationTypeService {
         return organisationTypes;
     }
 
-    public OrganisationTypeResponseDto enableDisEnableState (EnableDisEnableDto request){
+    public OrganisationTypeResponseDto enableDisableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         log.info("EnableDisEnableDto - {}", request);
         OrganisationType organisationType = organisationTypeRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Organisation Type Id does not exist!"));
-        organisationType.setIsActive(request.isActive());
+        organisationType.setIsActive(request.getIsActive());
         organisationType.setUpdatedBy(userCurrent.getId());
         log.info("organisationType - {}", organisationType);
         organisationTypeRepository.save(organisationType);

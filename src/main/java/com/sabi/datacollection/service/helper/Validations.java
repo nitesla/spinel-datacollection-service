@@ -2,14 +2,11 @@ package com.sabi.datacollection.service.helper;
 
 
 import com.sabi.datacollection.core.dto.request.*;
+import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.core.models.LGA;
-import com.sabi.datacollection.core.models.Sector;
 import com.sabi.datacollection.core.models.State;
-import com.sabi.datacollection.service.repositories.CountryRepository;
-import com.sabi.datacollection.service.repositories.LGARepository;
-import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
-import com.sabi.datacollection.service.repositories.StateRepository;
+import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.repositories.RoleRepository;
@@ -17,6 +14,7 @@ import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -33,15 +31,19 @@ public class Validations {
     private UserRepository userRepository;
 
     private final ProjectOwnerRepository projectOwnerRepository;
+    private final ProjectCategoryRepository projectCategoryRepository;
+    private final SectorRepository sectorRepository;
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
         this.lgaRepository = lgaRepository;
         this.userRepository = userRepository;
         this.projectOwnerRepository = projectOwnerRepository;
+        this.projectCategoryRepository = projectCategoryRepository;
+        this.sectorRepository = sectorRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -187,11 +189,43 @@ public class Validations {
 
         projectOwnerRepository.findById(projectCategoryDto.getProjectOwnerId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a Project Owner id!"));
+                        " Enter a valid Project Owner id!"));
     }
 
     public void validateSector(SectorDto sectorDto) {
         if (sectorDto.getName() == null && (sectorDto.getName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+    }
+
+    public void validateProject(ProjectDto projectDto) {
+        if (projectDto.getName() == null && (projectDto.getName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+
+        if (projectDto.getIsLocationBased() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is location based cannot be empty");
+
+        if (!EnumUtils.isValidEnum(Status.class, projectDto.getStatus()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for status");
+
+        if (projectDto.getStartDate() == null && (projectDto.getStartDate().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Start date cannot be empty");
+
+        if (projectDto.getEndDate() == null && (projectDto.getEndDate().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "End date cannot be empty");
+
+        projectOwnerRepository.findById(projectDto.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Owner id!"));
+        projectCategoryRepository.findById(projectDto.getProjectCategoryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Category id!"));
+        sectorRepository.findById(projectDto.getSectorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Sector id!"));
+    }
+
+    public void validateDataSet(DataSetDto dataSetDto) {
+        if (dataSetDto.getName() == null && (dataSetDto.getName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 

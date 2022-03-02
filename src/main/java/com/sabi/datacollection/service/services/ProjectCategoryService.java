@@ -1,6 +1,7 @@
 package com.sabi.datacollection.service.services;
 
 
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectCategoryDto;
 import com.sabi.datacollection.core.dto.response.ProjectCategoryResponseDto;
 import com.sabi.datacollection.core.models.ProjectCategory;
@@ -64,7 +65,7 @@ public class ProjectCategoryService {
         return mapper.map(projectCategory, ProjectCategoryResponseDto.class);
     }
 
-    public ProjectCategoryResponseDto findProjectCategory(Long id){
+    public ProjectCategoryResponseDto findProjectCategoryById(Long id){
         ProjectCategory projectCategory = projectCategoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Category Id does not exist!"));
@@ -81,12 +82,12 @@ public class ProjectCategoryService {
 
     }
 
-    public void enableDisEnableState (EnableDisEnableDto request){
+    public void enableDisableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         ProjectCategory projectCategory = projectCategoryRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested ProjectCategory Id does not exist!"));
-        projectCategory.setIsActive(request.isActive());
+        projectCategory.setIsActive(request.getIsActive());
         projectCategory.setUpdatedBy(userCurrent.getId());
         projectCategoryRepository.save(projectCategory);
 

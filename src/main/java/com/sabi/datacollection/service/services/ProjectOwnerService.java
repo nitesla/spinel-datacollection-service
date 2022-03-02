@@ -1,6 +1,7 @@
 package com.sabi.datacollection.service.services;
 
 import com.sabi.datacollection.core.dto.request.CompleteSignupRequest;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerSignUpDto;
 import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
@@ -277,12 +278,12 @@ public class ProjectOwnerService {
         return projectOwners;
     }
 
-    public void enableDisEnable (EnableDisEnableDto request, HttpServletRequest request1){
+    public void enableDisable (EnableDisableDto request, HttpServletRequest request1){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
-        projectOwner.setIsActive(request.isActive());
+        projectOwner.setIsActive(request.getIsActive());
         projectOwner.setUpdatedBy(userCurrent.getId());
 
         auditTrailService
@@ -297,15 +298,20 @@ public class ProjectOwnerService {
     public List<ProjectOwner> getAll(Boolean isActive){
         List<ProjectOwner> projectOwners = projectOwnerRepository.findByIsActive(isActive);
 
-        projectOwners.forEach(projectOwner -> {
+        for ( ProjectOwner projectOwner: projectOwners){
             LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-            projectOwner.setLga(lga.getName());
-        });
-        projectOwners.forEach(projectOwner -> {
             OrganisationType organisationType = organisationTypeRepository
                     .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
+            if (lga == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "lga is null");
+            }
+            projectOwner.setLga(lga.getName());
+            if (organisationType == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
+            }
             projectOwner.setOrganisationType(organisationType.getName());
-        });
+        }
+
         return projectOwners;
     }
 }

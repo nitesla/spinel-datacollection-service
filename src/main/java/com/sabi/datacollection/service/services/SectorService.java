@@ -1,5 +1,6 @@
 package com.sabi.datacollection.service.services;
 
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.SectorDto;
 import com.sabi.datacollection.core.dto.response.SectorResponseDto;
 import com.sabi.datacollection.core.models.Sector;
@@ -62,7 +63,7 @@ public class SectorService {
         return mapper.map(sector, SectorResponseDto.class);
     }
 
-    public SectorResponseDto findSector(Long id){
+    public SectorResponseDto findSectorById(Long id){
         Sector sector = sectorRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Sector Id does not exist!"));
@@ -70,7 +71,7 @@ public class SectorService {
     }
 
 
-    public Page<Sector> findAll(String name, String description, PageRequest pageRequest ) {
+    public Page<Sector> findAll(String name, PageRequest pageRequest ) {
         Page<Sector> sectors = sectorRepository.findSectors(name, pageRequest);
         if (sectors == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
@@ -79,12 +80,12 @@ public class SectorService {
 
     }
 
-    public void enableDisEnableState (EnableDisEnableDto request){
+    public void enableDisableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Sector sector = sectorRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Sector Id does not exist!"));
-        sector.setIsActive(request.isActive());
+        sector.setIsActive(request.getIsActive());
         sector.setUpdatedBy(userCurrent.getId());
         sectorRepository.save(sector);
 
