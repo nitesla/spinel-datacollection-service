@@ -4,9 +4,11 @@ package com.sabi.datacollection.service.helper;
 import com.sabi.datacollection.core.dto.request.*;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.core.models.LGA;
+import com.sabi.datacollection.core.models.Sector;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.repositories.CountryRepository;
 import com.sabi.datacollection.service.repositories.LGARepository;
+import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.StateRepository;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.NotFoundException;
@@ -30,13 +32,16 @@ public class Validations {
     private LGARepository lgaRepository;
     private UserRepository userRepository;
 
+    private final ProjectOwnerRepository projectOwnerRepository;
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository) {
+
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
         this.lgaRepository = lgaRepository;
         this.userRepository = userRepository;
+        this.projectOwnerRepository = projectOwnerRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -172,6 +177,22 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (projectOwnerSignUp.getIsCorp() == true && (projectOwnerSignUp.getCorporateName() == null || projectOwnerSignUp.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
+    }
+
+    public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {
+        if (projectCategoryDto.getName() == null && (projectCategoryDto.getName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (projectCategoryDto.getDescription() == null && (projectCategoryDto.getDescription().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
+
+        projectOwnerRepository.findById(projectCategoryDto.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a Project Owner id!"));
+    }
+
+    public void validateSector(SectorDto sectorDto) {
+        if (sectorDto.getName() == null && (sectorDto.getName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
 }
