@@ -17,7 +17,6 @@ import com.sabi.datacollection.service.repositories.LGARepository;
 import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;

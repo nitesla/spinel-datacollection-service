@@ -6,7 +6,6 @@ import com.sabi.datacollection.core.dto.response.DataSetResponseDto;
 import com.sabi.datacollection.core.models.DataSet;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.DataSetRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
@@ -46,7 +45,7 @@ public class DataSetService {
         dataSet.setCreatedBy(userCurrent.getId());
         dataSet.setIsActive(true);
         dataSetRepository.save(dataSet);
-        log.info("Created new Project Category - {}", dataSet);
+        log.info("Created new DataSet Category - {}", dataSet);
         return mapper.map(dataSet, DataSetResponseDto.class);
     }
 

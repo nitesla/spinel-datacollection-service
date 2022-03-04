@@ -7,7 +7,6 @@ import com.sabi.datacollection.core.dto.response.ProjectCategoryResponseDto;
 import com.sabi.datacollection.core.models.ProjectCategory;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.ProjectCategoryRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;

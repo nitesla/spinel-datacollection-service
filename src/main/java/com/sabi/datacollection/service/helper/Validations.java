@@ -149,9 +149,9 @@ public class Validations {
     }
 
     public void validateOrganisationType(OrganisationTypeDto organisationTypeDto) {
-        if (organisationTypeDto.getName() == null && (organisationTypeDto.getName().isEmpty()))
+        if (organisationTypeDto.getName() == null || organisationTypeDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (organisationTypeDto.getDescription() == null && (organisationTypeDto.getDescription().isEmpty()))
+        if (organisationTypeDto.getDescription() == null || organisationTypeDto.getDescription().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
     }
 
@@ -182,9 +182,9 @@ public class Validations {
     }
 
     public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {
-        if (projectCategoryDto.getName() == null && (projectCategoryDto.getName().isEmpty()))
+        if (projectCategoryDto.getName() == null || projectCategoryDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (projectCategoryDto.getDescription() == null && (projectCategoryDto.getDescription().isEmpty()))
+        if (projectCategoryDto.getDescription() == null || projectCategoryDto.getDescription().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
 
         projectOwnerRepository.findById(projectCategoryDto.getProjectOwnerId())
@@ -193,12 +193,12 @@ public class Validations {
     }
 
     public void validateSector(SectorDto sectorDto) {
-        if (sectorDto.getName() == null && (sectorDto.getName().isEmpty()))
+        if (sectorDto.getName() == null || sectorDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
     public void validateProject(ProjectDto projectDto) {
-        if (projectDto.getName() == null && (projectDto.getName().isEmpty()))
+        if (projectDto.getName() == null || projectDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
         if (projectDto.getIsLocationBased() == null)
@@ -207,10 +207,10 @@ public class Validations {
         if (!EnumUtils.isValidEnum(Status.class, projectDto.getStatus()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for status");
 
-        if (projectDto.getStartDate() == null && (projectDto.getStartDate().isEmpty()))
+        if (projectDto.getStartDate() == null || projectDto.getStartDate().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Start date cannot be empty");
 
-        if (projectDto.getEndDate() == null && (projectDto.getEndDate().isEmpty()))
+        if (projectDto.getEndDate() == null || projectDto.getEndDate().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "End date cannot be empty");
 
         projectOwnerRepository.findById(projectDto.getProjectOwnerId())
@@ -227,6 +227,28 @@ public class Validations {
     public void validateDataSet(DataSetDto dataSetDto) {
         if (dataSetDto.getName() == null && (dataSetDto.getName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+    }
+
+    public void validateCommentDictionary(CommentDictionaryDto commentDictionaryDto) {
+        System.err.println(commentDictionaryDto);
+        if (commentDictionaryDto.getName() == null || commentDictionaryDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (commentDictionaryDto.getAdditionalInfo() == null || commentDictionaryDto.getAdditionalInfo().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Additional Info cannot be empty");
+    }
+
+    public void validateIndicatorDictionary(IndicatorDictionaryDto indicatorDictionaryDto) {
+        if (indicatorDictionaryDto.getName() == null || indicatorDictionaryDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (indicatorDictionaryDto.getAdditionalInfo() == null || indicatorDictionaryDto.getAdditionalInfo().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Additional Info cannot be empty");
+    }
+
+    public void validateProjectOwnerUser(ProjectOwnerUserDto projectOwnerUserDto) {
+        if (projectOwnerUserDto.getUserId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "User Id cannot be empty");
+        if (projectOwnerUserDto.getProjectOwnerId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project Owner Id cannot be empty");
     }
 
 }
