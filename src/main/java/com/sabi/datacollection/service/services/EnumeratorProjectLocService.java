@@ -36,7 +36,7 @@ public class EnumeratorProjectLocService {
         this.validations = validations;
     }
 
-    public EnumeratorProjectLocResponseDto createEnumeratorProject(EnumeratorProjectLocationDto request) {
+    public EnumeratorProjectLocResponseDto createEnumeratorProjectLocation(EnumeratorProjectLocationDto request) {
         validations.validateEnumeratorProjectLocation(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         EnumeratorProjectLocation enumeratorProjectLocation = mapper.map(request, EnumeratorProjectLocation.class);

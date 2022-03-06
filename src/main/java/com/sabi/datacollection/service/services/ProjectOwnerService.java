@@ -23,16 +23,23 @@ import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.PreviousPasswords;
 import com.sabi.framework.models.User;
 import com.sabi.framework.models.UserRole;
+import com.sabi.framework.notification.requestDto.NotificationRequestDto;
+import com.sabi.framework.notification.requestDto.RecipientRequest;
+import com.sabi.framework.notification.requestDto.SmsRequest;
+import com.sabi.framework.notification.requestDto.WhatsAppRequest;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
 import com.sabi.framework.service.AuditTrailService;
+import com.sabi.framework.service.NotificationService;
 import com.sabi.framework.service.TokenService;
+import com.sabi.framework.service.WhatsAppService;
 import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,12 +47,20 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("ALL")
 @Slf4j
 @Service
 public class ProjectOwnerService {
+
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private WhatsAppService whatsAppService;
 
 
     private final OrganisationTypeRepository organisationTypeRepository;
@@ -101,6 +116,8 @@ public class ProjectOwnerService {
         user.setUserCategory(DataConstants.PROJECT_OWNER_USER);
         user.setUsername(request.getEmail());
         user.setLoginAttempts(0);
+        user.setResetToken(Utility.registrationCode("HHmmss"));
+        user.setResetTokenExpirationDate(Utility.tokenExpiration());
         user.setCreatedBy(0l);
         user.setIsActive(false);
         user = userRepository.save(user);
@@ -143,6 +160,32 @@ public class ProjectOwnerService {
                 .corporateName(projectOwner.getCorporateName())
                 .username(user.getUsername())
                 .build();
+
+
+        // --------  sending token  -----------
+
+        NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
+        User emailRecipient = userRepository.getOne(user.getId());
+        notificationRequestDto.setMessage("Activation Otp " + " " + user.getResetToken());
+        List<RecipientRequest> recipient = new ArrayList<>();
+        recipient.add(RecipientRequest.builder()
+                .email(emailRecipient.getEmail())
+                .build());
+        notificationRequestDto.setRecipient(recipient);
+        notificationService.emailNotificationRequest(notificationRequestDto);
+
+        SmsRequest smsRequest = SmsRequest.builder()
+                .message("Activation Otp " + " " + user.getResetToken())
+                .phoneNumber(emailRecipient.getPhone())
+                .build();
+        notificationService.smsNotificationRequest(smsRequest);
+
+
+        WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
+                .message("Activation Otp " + " " + user.getResetToken())
+                .phoneNumber(emailRecipient.getPhone())
+                .build();
+        whatsAppService.whatsAppNotification(whatsAppRequest);
 
         auditTrailService
                 .logEvent(response.getUsername(),
