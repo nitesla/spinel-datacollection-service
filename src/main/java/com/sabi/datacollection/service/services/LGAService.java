@@ -2,20 +2,19 @@ package com.sabi.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.LGADto;
 import com.sabi.datacollection.core.dto.response.LGAResponseDto;
 import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.State;
+import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.LGARepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
+import com.sabi.datacollection.service.repositories.StateRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
 import com.sabi.framework.utils.CustomResponseCode;
-
-import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.StateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -149,12 +148,12 @@ public class LGAService {
      * </summary>
      * <remarks>this method is responsible for enabling and dis enabling a country</remarks>
      */
-    public void enableDisEnableState (EnableDisEnableDto request){
+    public void enableDisEnableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         LGA lga = lgaRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested LGA Id does not exist!"));
-        lga.setIsActive(request.isActive());
+        lga.setIsActive(request.getIsActive());
         lga.setUpdatedBy(userCurrent.getId());
         lgaRepository.save(lga);
 

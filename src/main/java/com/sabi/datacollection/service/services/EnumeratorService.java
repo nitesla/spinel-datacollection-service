@@ -3,6 +3,7 @@ package com.sabi.datacollection.service.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.sabi.datacollection.core.dto.request.CompleteSignupRequest;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.EnumeratorDto;
 import com.sabi.datacollection.core.dto.request.EnumeratorSignUpDto;
 import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
@@ -11,14 +12,15 @@ import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.models.Enumerator;
 import com.sabi.datacollection.core.models.LGA;
+import com.sabi.datacollection.core.models.OrganisationType;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.helper.DataConstants;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.LGARepository;
+import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
 import com.sabi.datacollection.service.repositories.StateRepository;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
@@ -54,6 +56,10 @@ public class EnumeratorService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private OrganisationTypeRepository organisationTypeRepository;
+
     private EnumeratorRepository repository;
     private UserRepository userRepository;
     private PreviousPasswordRepository previousPasswordRepository;
@@ -288,6 +294,10 @@ public class EnumeratorService {
 
         State state = stateRepository.getOne(lga.getStateId());
 
+        OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(enumeratorProperties.getOrganisationTypeId());
+
+
+        enumeratorProperties.setOrganisationType(organisationType.getName());
         enumeratorProperties.setLga(lga.getName());
         enumeratorProperties.setState(state.getName());
 
@@ -302,6 +312,10 @@ public class EnumeratorService {
         }
         enumeratorProperties.getContent().forEach(enumerator ->{
             LGA lga = lgaRepository.findLGAById(enumerator.getLgaId());
+            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(enumerator.getOrganisationTypeId());
+
+
+            enumerator.setOrganisationType(organisationType.getName());
             enumerator.setLga(lga.getName());
         });
         return enumeratorProperties;
@@ -310,12 +324,12 @@ public class EnumeratorService {
 
 
 
-    public void enableDisEnable (EnableDisEnableDto request,HttpServletRequest request1){
+    public void enableDisEnable (EnableDisableDto request, HttpServletRequest request1){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Enumerator enumeratorProperties = repository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested enumerator properties Id does not exist!"));
-        enumeratorProperties.setIsActive(request.isActive());
+        enumeratorProperties.setIsActive(request.getIsActive());
         enumeratorProperties.setUpdatedBy(userCurrent.getId());
 
         auditTrailService
@@ -333,6 +347,17 @@ public class EnumeratorService {
         for (Enumerator part : enumeratorProperties
                 ) {
             LGA lga = lgaRepository.findLGAById(part.getLgaId());
+            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId());
+
+
+            if (organisationType == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
+            }
+            part.setOrganisationType(organisationType.getName());
+
+            if (lga == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "LGA type is null");
+            }
             part.setLga(lga.getName());
 
         }
