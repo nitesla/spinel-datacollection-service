@@ -169,9 +169,9 @@ public class Validations {
     }
 
     public void validateOrganisationType(OrganisationTypeDto organisationTypeDto) {
-        if (organisationTypeDto.getName() == null && (organisationTypeDto.getName().isEmpty()))
+        if (organisationTypeDto.getName() == null || organisationTypeDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (organisationTypeDto.getDescription() == null && (organisationTypeDto.getDescription().isEmpty()))
+        if (organisationTypeDto.getDescription() == null || organisationTypeDto.getDescription().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
     }
 
@@ -202,9 +202,9 @@ public class Validations {
     }
 
     public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {
-        if (projectCategoryDto.getName() == null && (projectCategoryDto.getName().isEmpty()))
+        if (projectCategoryDto.getName() == null || projectCategoryDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (projectCategoryDto.getDescription() == null && (projectCategoryDto.getDescription().isEmpty()))
+        if (projectCategoryDto.getDescription() == null || projectCategoryDto.getDescription().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
 
         projectOwnerRepository.findById(projectCategoryDto.getProjectOwnerId())
@@ -213,12 +213,12 @@ public class Validations {
     }
 
     public void validateSector(SectorDto sectorDto) {
-        if (sectorDto.getName() == null && (sectorDto.getName().isEmpty()))
+        if (sectorDto.getName() == null || sectorDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
     public void validateProject(ProjectDto projectDto) {
-        if (projectDto.getName() == null && (projectDto.getName().isEmpty()))
+        if (projectDto.getName() == null || projectDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
         if (projectDto.getIsLocationBased() == null)
@@ -227,10 +227,10 @@ public class Validations {
         if (!EnumUtils.isValidEnum(Status.class, projectDto.getStatus()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for status");
 
-        if (projectDto.getStartDate() == null && (projectDto.getStartDate().isEmpty()))
+        if (projectDto.getStartDate() == null || projectDto.getStartDate().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Start date cannot be empty");
 
-        if (projectDto.getEndDate() == null && (projectDto.getEndDate().isEmpty()))
+        if (projectDto.getEndDate() == null || projectDto.getEndDate().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "End date cannot be empty");
 
         projectOwnerRepository.findById(projectDto.getProjectOwnerId())
@@ -247,6 +247,79 @@ public class Validations {
     public void validateDataSet(DataSetDto dataSetDto) {
         if (dataSetDto.getName() == null && (dataSetDto.getName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+    }
+
+    public void validateCommentDictionary(CommentDictionaryDto commentDictionaryDto) {
+        System.err.println(commentDictionaryDto);
+        if (commentDictionaryDto.getName() == null || commentDictionaryDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (commentDictionaryDto.getAdditionalInfo() == null || commentDictionaryDto.getAdditionalInfo().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Additional Info cannot be empty");
+    }
+
+    public void validateIndicatorDictionary(IndicatorDictionaryDto indicatorDictionaryDto) {
+        if (indicatorDictionaryDto.getName() == null || indicatorDictionaryDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (indicatorDictionaryDto.getAdditionalInfo() == null || indicatorDictionaryDto.getAdditionalInfo().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Additional Info cannot be empty");
+    }
+
+    public void validateProjectOwnerUser(ProjectOwnerUserDto projectOwnerUserDto) {
+        if (projectOwnerUserDto.getUserId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "User Id cannot be empty");
+        if (projectOwnerUserDto.getProjectOwnerId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project Owner Id cannot be empty");
+    }
+
+    public void validateEnumeratorRating(EnumeratorRatingDto request) {
+        if (request.getEnumeratorProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorProjectId cannot be empty");
+        if (request.getRating() == null )
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Rating cannot be empty");
+
+        enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Project Id!"));
+    }
+
+    public void validateEnumeratorProject(EnumeratorProjectDto request) {
+        if (request.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "projectId cannot be empty");
+        if (request.getEnumeratorId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorId cannot be empty");
+        if (request.getAssignedDate() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "assignedDate cannot be empty");
+        if (request.getCompletedDate() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "completedDate cannot be empty");
+        if (request.getStatus() == null && request.getStatus().toString().isEmpty() )
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Status cannot be empty");
+
+        projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Id!"));
+
+        enumeratorRepository.findById(request.getEnumeratorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Id!"));
+    }
+
+    public void validateEnumeratorProjectLocation(EnumeratorProjectLocationDto request) {
+        if (request.getEnumeratorProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorProjectId cannot be empty");
+        if (request.getProjectLocationId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "projectLocationId cannot be empty");
+        if (request.getCollectedRecord() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "collectedRecord cannot be empty");
+        if (request.getExpectedRecord() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "expectedRecord cannot be empty");
+
+//        projectLocationRepository.findById(request.getProjectLocationId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Project Location Id!"));
+
+        enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Project Id!"));
     }
 
     public void validateEnumeratorRating(EnumeratorRatingDto request) {

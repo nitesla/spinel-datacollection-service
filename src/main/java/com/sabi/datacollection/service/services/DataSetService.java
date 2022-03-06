@@ -45,7 +45,7 @@ public class DataSetService {
         dataSet.setCreatedBy(userCurrent.getId());
         dataSet.setIsActive(true);
         dataSetRepository.save(dataSet);
-        log.info("Created new Project Category - {}", dataSet);
+        log.info("Created new DataSet Category - {}", dataSet);
         return mapper.map(dataSet, DataSetResponseDto.class);
     }
 
