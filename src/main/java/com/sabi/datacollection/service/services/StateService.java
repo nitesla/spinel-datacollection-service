@@ -2,20 +2,19 @@ package com.sabi.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.StateDto;
 import com.sabi.datacollection.core.dto.response.StateResponseDto;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.core.models.State;
+import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.CountryRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
+import com.sabi.datacollection.service.repositories.StateRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
 import com.sabi.framework.utils.CustomResponseCode;
-
-import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.StateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -132,12 +131,12 @@ public class StateService {
      * </summary>
      * <remarks>this method is responsible for enabling and dis enabling a state</remarks>
      */
-    public void enableDisEnableState (EnableDisEnableDto request){
+    public void enableDisEnableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         State state = stateRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested State Id does not exist!"));
-        state.setIsActive(request.isActive());
+        state.setIsActive(request.getIsActive());
         state.setUpdatedBy(userCurrent.getId());
         stateRepository.save(state);
 

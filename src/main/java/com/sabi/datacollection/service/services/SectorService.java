@@ -6,7 +6,6 @@ import com.sabi.datacollection.core.dto.response.SectorResponseDto;
 import com.sabi.datacollection.core.models.Sector;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.SectorRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;

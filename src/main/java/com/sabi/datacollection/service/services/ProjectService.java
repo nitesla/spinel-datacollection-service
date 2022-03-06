@@ -7,7 +7,6 @@ import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Project;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
