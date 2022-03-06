@@ -1,6 +1,5 @@
 package com.sabi.datacollection.service.repositories;
 
-import com.sabi.datacollection.core.models.OrganisationType;
 import com.sabi.datacollection.core.models.ProjectOwner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
