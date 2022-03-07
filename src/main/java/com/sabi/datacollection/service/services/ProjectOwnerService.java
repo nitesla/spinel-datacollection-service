@@ -138,8 +138,6 @@ public class ProjectOwnerService {
 
         ProjectOwner saveProjectOwner = new ProjectOwner();
         saveProjectOwner.setUserId(user.getId());
-        saveProjectOwner.setRegistrationToken(Utility.registrationCode("HHmmss"));
-        saveProjectOwner.setRegistrationTokenExpiration(Utility.expiredTime());
         saveProjectOwner.setIsActive(false);
         saveProjectOwner.setCreatedBy(user.getId());
         saveProjectOwner.setIsCorp(request.getIsCorp());

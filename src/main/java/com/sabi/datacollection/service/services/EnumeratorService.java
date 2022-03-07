@@ -156,8 +156,6 @@ public class EnumeratorService {
 
         Enumerator saveEnumerator = new Enumerator();
         saveEnumerator.setUserId(user.getId());
-        saveEnumerator.setRegistrationToken(Utility.registrationCode("HHmmss"));
-        saveEnumerator.setRegistrationTokenExpiration(Utility.expiredTime());
         saveEnumerator.setIsActive(false);
         saveEnumerator.setCreatedBy(user.getId());
         saveEnumerator.setCorp(request.getIsCorp());
