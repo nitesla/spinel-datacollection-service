@@ -52,8 +52,8 @@ public class Validations {
     @Autowired
     private EnumeratorRepository enumeratorRepository;
 
-//    @Autowired
-//    private ProjectLocationRepository projectLocationRepository;
+    @Autowired
+    private ProjectLocationRepository projectLocationRepository;
 
 //    @Autowired
 //    private SubmissionRepository submissionRepository;
@@ -337,9 +337,9 @@ public class Validations {
         if (request.getExpectedRecord() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "expectedRecord cannot be empty");
 
-//        projectLocationRepository.findById(request.getProjectLocationId())
-//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-//                        " Enter a valid Project Location Id!"));
+        projectLocationRepository.findById(request.getProjectLocationId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Location Id!"));
 
         enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
