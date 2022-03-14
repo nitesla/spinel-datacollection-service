@@ -50,6 +50,12 @@ public class Validations {
 //    @Autowired
 //    private ProjectLocationRepository projectLocationRepository;
 
+//    @Autowired
+//    private SubmissionRepository submissionRepository;
+
+    @Autowired
+    private CommentDictionaryRepository commentDictionaryRepository;
+
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository) {
         this.roleRepository = roleRepository;
@@ -313,6 +319,21 @@ public class Validations {
         enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Enumerator Project Id!"));
+    }
+
+    public void validateSubmissionComment(SubmissionCommentDto request) {
+        if (request.getSubmissionId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "submissionId cannot be empty");
+        if (request.getCommentId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "commentId cannot be empty");
+
+//        submissionRepository.findById(request.getSubmissionId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Submission Id!"));
+
+        commentDictionaryRepository.findById(request.getCommentId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Comment Id!"));
     }
 
 }
