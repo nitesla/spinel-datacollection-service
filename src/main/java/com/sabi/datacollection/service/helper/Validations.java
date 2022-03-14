@@ -18,6 +18,7 @@ import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -39,6 +40,21 @@ public class Validations {
     private final ProjectRepository projectRepository;
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
+
+    @Autowired
+    private OrganisationTypeRepository organisationTypeRepository;
+
+    @Autowired
+    private EnumeratorProjectRepository enumeratorProjectRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private EnumeratorRepository enumeratorRepository;
+
+//    @Autowired
+//    private ProjectLocationRepository projectLocationRepository;
 
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, ProjectRepository projectRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
@@ -125,6 +141,10 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (enumerator.getIsCorp() == true && (enumerator.getCorporateName() == null || enumerator.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+
+        organisationTypeRepository.findById(enumerator.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Organisation type id!"));
     }
 
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
@@ -271,11 +291,55 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Additional Info cannot be empty");
     }
 
-    public void validateProjectOwnerUser(ProjectOwnerUserDto projectOwnerUserDto) {
-        if (projectOwnerUserDto.getUserId() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "User Id cannot be empty");
-        if (projectOwnerUserDto.getProjectOwnerId() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project Owner Id cannot be empty");
+    public void validateEnumeratorRating(EnumeratorRatingDto request) {
+        if (request.getEnumeratorProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorProjectId cannot be empty");
+        if (request.getRating() == null )
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Rating cannot be empty");
+
+        enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Project Id!"));
+    }
+
+    public void validateEnumeratorProject(EnumeratorProjectDto request) {
+        if (request.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "projectId cannot be empty");
+        if (request.getEnumeratorId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorId cannot be empty");
+        if (request.getAssignedDate() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "assignedDate cannot be empty");
+        if (request.getCompletedDate() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "completedDate cannot be empty");
+        if (request.getStatus() == null && request.getStatus().toString().isEmpty() )
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Status cannot be empty");
+
+        projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Id!"));
+
+        enumeratorRepository.findById(request.getEnumeratorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Id!"));
+    }
+
+    public void validateEnumeratorProjectLocation(EnumeratorProjectLocationDto request) {
+        if (request.getEnumeratorProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorProjectId cannot be empty");
+        if (request.getProjectLocationId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "projectLocationId cannot be empty");
+        if (request.getCollectedRecord() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "collectedRecord cannot be empty");
+        if (request.getExpectedRecord() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "expectedRecord cannot be empty");
+
+//        projectLocationRepository.findById(request.getProjectLocationId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Project Location Id!"));
+
+        enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Project Id!"));
     }
 
     public void validatePricingConfiguration(PricingConfigurationDto pricingConfigurationDto){
