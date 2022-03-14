@@ -37,7 +37,6 @@ public class Validations {
     private final ProjectOwnerRepository projectOwnerRepository;
     private final ProjectCategoryRepository projectCategoryRepository;
     private final SectorRepository sectorRepository;
-    private final ProjectRepository projectRepository;
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
 
@@ -57,7 +56,7 @@ public class Validations {
 //    private ProjectLocationRepository projectLocationRepository;
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, ProjectRepository projectRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -66,7 +65,6 @@ public class Validations {
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
         this.sectorRepository = sectorRepository;
-        this.projectRepository = projectRepository;
         this.indicatorDictionaryRepository = indicatorDictionaryRepository;
         this.dataSetRepository = dataSetRepository;
     }
@@ -378,6 +376,15 @@ public class Validations {
         indicatorDictionaryRepository.findById(projectIndicatorDto.getIndicatorId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Enter valid Indicaator Id"));
+    }
+
+    public void validateProjectOwnerUser(ProjectOwnerUserDto projectOwnerUserDto) {
+        userRepository.findById(projectOwnerUserDto.getUserId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid user Id"));
+        projectOwnerRepository.findById(projectOwnerUserDto.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid project owner Id"));
     }
 
 }

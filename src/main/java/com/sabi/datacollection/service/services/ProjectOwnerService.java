@@ -220,7 +220,7 @@ public class ProjectOwnerService {
        projectOwnerRepository.save(projectOwner);
        log.info("complete sign up - {}", projectOwner);
 
-       User user = userRepository.getOne(projectOwner.getId());
+       User user = userRepository.getOne(projectOwner.getUserId());
        user.setIsActive(true);
        user.setUpdatedBy(projectOwner.getUserId());
        user.setPasswordChangedOn(LocalDateTime.now());
