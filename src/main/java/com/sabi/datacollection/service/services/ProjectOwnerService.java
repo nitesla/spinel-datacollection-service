@@ -11,11 +11,13 @@ import com.sabi.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
 import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.OrganisationType;
 import com.sabi.datacollection.core.models.ProjectOwner;
+import com.sabi.datacollection.core.models.ProjectOwnerUser;
 import com.sabi.datacollection.service.helper.DataConstants;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.LGARepository;
 import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
+import com.sabi.datacollection.service.repositories.ProjectOwnerUserRepository;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
@@ -48,6 +50,7 @@ import java.util.List;
 public class ProjectOwnerService {
 
 
+    private final ProjectOwnerUserRepository projectOwnerUserRepository;
     private final OrganisationTypeRepository organisationTypeRepository;
     private final LGARepository lgaRepository;
     private final AuditTrailService auditTrailService;
@@ -59,7 +62,10 @@ public class ProjectOwnerService {
     private final Validations validations;
     private final UserRoleRepository userRoleRepository;
 
-    public ProjectOwnerService(OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository, AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository, ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository) {
+    public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository,
+                               AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
+                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository) {
+        this.projectOwnerUserRepository = projectOwnerUserRepository;
         this.organisationTypeRepository = organisationTypeRepository;
         this.lgaRepository = lgaRepository;
         this.auditTrailService = auditTrailService;
@@ -133,6 +139,11 @@ public class ProjectOwnerService {
         ProjectOwner projectOwner = projectOwnerRepository.save(saveProjectOwner);
         log.info("Created new Project Owner - {}", saveProjectOwner);
 
+        ProjectOwnerUser projectOwnerUser = new ProjectOwnerUser();
+        projectOwnerUser.setProjectOwnerId(projectOwner.getId());
+        projectOwnerUser.setUserId(user.getId());
+        projectOwnerUserRepository.save(projectOwnerUser);
+
         ProjectOwnerSignUpResponseDto response = ProjectOwnerSignUpResponseDto.builder()
                 .id(user.getId())
                 .projectOwnerId(projectOwner.getId())
@@ -150,16 +161,18 @@ public class ProjectOwnerService {
                         AuditTrailFlag.SIGNUP,
                         " SignUp Project Owner Request for:" + user.getFirstName() + " " + user.getLastName() + " " + user.getEmail()
                         , 1, Utility.getClientIp(request1));
-
           return response;
     }
 
     public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request){
-//        validations.
+       validations.validateProjectOwnerCompleteSignUp(request);
        ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                        "Requested Project Owner does not exist!"));
        mapper.map(request, projectOwner);
+
+       if(projectOwner.getIsActive())
+           throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project owner is already active. Double check project Id");
 
        projectOwner.setUpdatedBy(projectOwner.getUserId());
        projectOwner.setIsActive(true);
@@ -192,7 +205,6 @@ public class ProjectOwnerService {
         User user = userRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested user id does not exist!"));
-        mapper.map(request, user);
 
         String password = request.getPassword();
         user.setPassword(passwordEncoder.encode(password));
@@ -253,8 +265,12 @@ public class ProjectOwnerService {
         ProjectOwner projectOwner = projectOwnerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
-        LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-        OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(projectOwner.getOrganisationTypeId());
+        LGA lga = lgaRepository.findById(projectOwner.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested lga Id does not exist"));
+        OrganisationType organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested organisation type does not exist"));
         projectOwner.setLga(lga.getName());
         projectOwner.setOrganisationType(organisationType.getName());
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
@@ -266,13 +282,15 @@ public class ProjectOwnerService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projectOwners.getContent().forEach(projectOwner -> {
-            LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-            projectOwner.setLga(lga.getName());
-        });
-        projectOwners.getContent().forEach(projectOwner -> {
-            OrganisationType organisationType = organisationTypeRepository
-                    .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
-            projectOwner.setOrganisationType(organisationType.getName());
+            if(projectOwner.getLgaId() != null ){
+                LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
+                projectOwner.setLga(lga.getName());
+            }
+            if(projectOwner.getOrganisationTypeId() != null){
+                OrganisationType organisationType = organisationTypeRepository
+                        .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
+                projectOwner.setOrganisationType(organisationType.getName());
+            }
         });
         return projectOwners;
     }
