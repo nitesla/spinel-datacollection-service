@@ -5,10 +5,13 @@ import com.sabi.datacollection.core.dto.request.*;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.core.models.LGA;
+import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.exceptions.BadRequestException;
+import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
+import com.sabi.framework.models.User;
 import com.sabi.framework.repositories.RoleRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.utils.CustomResponseCode;
@@ -34,6 +37,8 @@ public class Validations {
     private final ProjectOwnerRepository projectOwnerRepository;
     private final ProjectCategoryRepository projectCategoryRepository;
     private final SectorRepository sectorRepository;
+    private final IndicatorDictionaryRepository indicatorDictionaryRepository;
+    private final DataSetRepository dataSetRepository;
 
     @Autowired
     private OrganisationTypeRepository organisationTypeRepository;
@@ -57,7 +62,7 @@ public class Validations {
     private CommentDictionaryRepository commentDictionaryRepository;
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -66,6 +71,8 @@ public class Validations {
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
         this.sectorRepository = sectorRepository;
+        this.indicatorDictionaryRepository = indicatorDictionaryRepository;
+        this.dataSetRepository = dataSetRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -205,6 +212,24 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (projectOwnerSignUp.getIsCorp() == true && (projectOwnerSignUp.getCorporateName() == null || projectOwnerSignUp.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
+
+        User userPhone = userRepository.findByPhone(projectOwnerSignUp.getPhone());
+        if (userPhone != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "User with Phone number already exists");
+
+        User userEmail = userRepository.findByEmail(projectOwnerSignUp.getEmail());
+        if (userEmail != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "User with email already exists");
+    }
+
+    public void validateProjectOwnerCompleteSignUp(CompleteSignupRequest completeSignupRequest) {
+        ProjectOwner projectOwnerEmail = projectOwnerRepository.findProjectOwnerByEmail(completeSignupRequest.getEmail());
+        if (projectOwnerEmail != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with email already exists");
+
+        ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(completeSignupRequest.getPhone());
+        if (projectOwnerPhone != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
     }
 
     public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {
@@ -319,6 +344,53 @@ public class Validations {
         enumeratorProjectRepository.findById(request.getEnumeratorProjectId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Enumerator Project Id!"));
+    }
+
+    public void validatePricingConfiguration(PricingConfigurationDto pricingConfigurationDto){
+        if (pricingConfigurationDto.getPrice() == null ){
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Price cannot be empty");
+        }
+        dataSetRepository.findById(pricingConfigurationDto.getDataSetId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Dataset id!"));
+    }
+
+    public void validateProjectLocation(ProjectLocationDto projectLocationDto) {
+        if (projectLocationDto.getLocationType() == null || projectLocationDto.getLocationType().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Location Type cannot be empty");
+        if (projectLocationDto.getLocationType().equalsIgnoreCase(DataConstants.LOCATION_STATE)) {
+            stateRepository.findById(projectLocationDto.getLocationId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Enter valid location Id"));
+        }
+        if (projectLocationDto.getLocationType().equalsIgnoreCase(DataConstants.LOCATION_LGA)) {
+            lgaRepository.findById(projectLocationDto.getLocationId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Enter valid location Id"));
+        }
+        if (projectLocationDto.getName() == null || projectLocationDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        projectRepository.findById(projectLocationDto.getProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid project Id"));
+    }
+
+    public void validateProjectIndicator(ProjectIndicatorDto projectIndicatorDto) {
+        projectRepository.findById(projectIndicatorDto.getProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid project Id"));
+        indicatorDictionaryRepository.findById(projectIndicatorDto.getIndicatorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid Indicaator Id"));
+    }
+
+    public void validateProjectOwnerUser(ProjectOwnerUserDto projectOwnerUserDto) {
+        userRepository.findById(projectOwnerUserDto.getUserId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid user Id"));
+        projectOwnerRepository.findById(projectOwnerUserDto.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Enter valid project owner Id"));
     }
 
     public void validateSubmissionComment(SubmissionCommentDto request) {
