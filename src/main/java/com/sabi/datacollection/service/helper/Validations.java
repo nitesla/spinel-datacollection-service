@@ -35,7 +35,6 @@ public class Validations {
     private final ProjectCategoryRepository projectCategoryRepository;
     private final SectorRepository sectorRepository;
 
-
     @Autowired
     private OrganisationTypeRepository organisationTypeRepository;
 
@@ -50,6 +49,10 @@ public class Validations {
 
 //    @Autowired
 //    private ProjectLocationRepository projectLocationRepository;
+
+    //@Autowired
+    //private final FormRepository formRepository;
+
 
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository) {
@@ -331,9 +334,22 @@ public class Validations {
         if (projectFormRequestDto.getFormId() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"FormId cannot be empty ");
         if (projectFormRequestDto.getProjectId() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId can nor be empty");
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId cannot be empty");
         projectRepository.findById(projectFormRequestDto.getProjectId())
                 .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid Project Id"));
+
+        //formRepository.findById(projectFormRequestDto.getFormId())
+        //        .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid Form Id"));
+
+    }
+
+    public void validateProjectBilling(ProjectBillingRequestDto projectBillingRequestDto) {
+        if (projectBillingRequestDto.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId cannot be empty");
+        // Validate other parameters as needed and as introduced in the ProjectBilling Model.
+        projectRepository.findById(projectBillingRequestDto.getProjectId())
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid project Id"));
+        // Validate other parameters as needed and as introduced in the ProjectBilling Model.
     }
 }
 

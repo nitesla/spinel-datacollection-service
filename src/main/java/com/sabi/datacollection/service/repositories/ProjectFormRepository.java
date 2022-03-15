@@ -18,6 +18,8 @@ public interface ProjectFormRepository extends JpaRepository<ProjectForm, Long> 
 
     List<ProjectForm> findAllByFormId(Long formId);
 
+    ProjectForm findByProjectIdAndFormId(Long projectId, Long formId);
+
     @Query("SELECT pf FROM ProjectForm pf WHERE ((:projectId IS NULL ) OR (:projectId  IS NOT NULL AND pf.projectId =:projectId))" +
             "AND ((:formId IS NULL ) OR (:formId IS NOT NULL AND pf.formId =:formId)) ORDER BY pf.id DESC ")
     Page<ProjectForm> searchProjectForms(Long projectId, Long formId, Pageable pageable);

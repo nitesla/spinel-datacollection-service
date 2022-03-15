@@ -98,16 +98,18 @@ public class ProjectEnumeratorService {
             if(projectEnumerator!=null){
                 throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION,"This projectEnumerator already exists");
             }
+            projectEnumerator = modelMapper.map(projectEnumeratorRequestDto,ProjectEnumerator.class);
             projectEnumerator.setCreatedBy(currentUser.getId());
             projectEnumerator.setIsActive(true);
         }
         else {
             projectEnumerator = projectEnumeratorRepository.findById(projectEnumeratorRequestDto.getId())
-                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Invalid Project EnumeratorId"));
+                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Invalid ProjectEnumerator Id"));
 
+            modelMapper.map(projectEnumeratorRequestDto,projectEnumerator);
             projectEnumerator.setUpdatedBy(currentUser.getId());
         }
-        projectEnumerator = modelMapper.map(projectEnumeratorRequestDto,ProjectEnumerator.class);
+
         projectEnumerator= projectEnumeratorRepository.save(projectEnumerator);
         return projectEnumerator;
 
@@ -135,7 +137,7 @@ public class ProjectEnumeratorService {
      */
     public ProjectEnumeratorResponseDto getProjectEnumerator(Long id){
        ProjectEnumerator projectEnumerator = projectEnumeratorRepository.findById(id)
-                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested ProjectEnumerator"));
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested ProjectEnumerator does not exist"));
        return modelMapper.map(projectEnumerator, ProjectEnumeratorResponseDto.class);
     }
     /**

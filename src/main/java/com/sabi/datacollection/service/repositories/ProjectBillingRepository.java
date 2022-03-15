@@ -17,6 +17,8 @@ public interface ProjectBillingRepository extends JpaRepository<ProjectBilling,L
 
     List<ProjectBilling> findAllByProjectId(Long projectId);
 
+    ProjectBilling findByProjectId(Long projectId);
+
     @Query("SELECT pb FROM ProjectBilling pb WHERE ((:projectId IS NULL ) OR (:projectId IS NOT NULL AND pb.projectId =:projectId)) " +
             "ORDER BY pb.id DESC ")
     Page<ProjectBilling> findProjectBillings(Long projectId,Pageable pageable);
