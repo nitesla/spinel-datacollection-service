@@ -81,9 +81,8 @@ public class OrganisationTypeService {
         return organisationTypes;
     }
 
-    public OrganisationTypeResponseDto enableDisableState (EnableDisableDto request){
+    public void enableDisableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
-        log.info("EnableDisEnableDto - {}", request);
         OrganisationType organisationType = organisationTypeRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Organisation Type Id does not exist!"));
@@ -91,7 +90,6 @@ public class OrganisationTypeService {
         organisationType.setUpdatedBy(userCurrent.getId());
         log.info("organisationType - {}", organisationType);
         organisationTypeRepository.save(organisationType);
-        return mapper.map(organisationType, OrganisationTypeResponseDto.class);
     }
 
     public List<OrganisationType> getAll(Boolean isActive) {

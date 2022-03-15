@@ -14,6 +14,8 @@ import java.util.List;
 public interface ProjectOwnerRepository extends JpaRepository<ProjectOwner, Long> {
     ProjectOwner findByUserId(Long userId);
     ProjectOwner findProjectOwnerById(Long id);
+    ProjectOwner findProjectOwnerByEmail(String email);
+    ProjectOwner findProjectOwnerByPhone(String phone);
 
     List<ProjectOwner> findByIsActive(Boolean isActive);
 
