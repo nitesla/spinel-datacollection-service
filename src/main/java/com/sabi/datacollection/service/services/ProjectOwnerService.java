@@ -143,6 +143,8 @@ public class ProjectOwnerService {
         previousPasswordRepository.save(previousPasswords);
 
         ProjectOwner saveProjectOwner = new ProjectOwner();
+        saveProjectOwner.setFirstname(request.getFirstName());
+        saveProjectOwner.setLastname(request.getLastName());
         saveProjectOwner.setUserId(user.getId());
         saveProjectOwner.setIsActive(false);
         saveProjectOwner.setCreatedBy(user.getId());

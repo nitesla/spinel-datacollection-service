@@ -3,9 +3,11 @@ package com.sabi.datacollection.service.services;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectIndicatorDto;
 import com.sabi.datacollection.core.dto.response.ProjectIndicatorResponseDto;
-import com.sabi.datacollection.core.models.ProjectIndicator;
+import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.Validations;
+import com.sabi.datacollection.service.repositories.IndicatorDictionaryRepository;
 import com.sabi.datacollection.service.repositories.ProjectIndicatorRepository;
+import com.sabi.datacollection.service.repositories.ProjectRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
@@ -22,11 +24,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ProjectIndicatorService {
 
+    private final ProjectRepository projectRepository;
+    private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final ProjectIndicatorRepository projectIndicatorRepository;
     private final ModelMapper mapper;
     private final Validations validations;
 
-    public ProjectIndicatorService(ProjectIndicatorRepository projectIndicatorRepository, ModelMapper mapper, Validations validations) {
+    public ProjectIndicatorService(ProjectRepository projectRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, ProjectIndicatorRepository projectIndicatorRepository, ModelMapper mapper, Validations validations) {
+        this.projectRepository = projectRepository;
+        this.indicatorDictionaryRepository = indicatorDictionaryRepository;
         this.projectIndicatorRepository = projectIndicatorRepository;
         this.mapper = mapper;
         this.validations = validations;
@@ -65,6 +71,7 @@ public class ProjectIndicatorService {
         ProjectIndicator projectIndicator = projectIndicatorRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Indicator Id does not exist!"));
+        setProjectAndIndicator(projectIndicator);
         return mapper.map(projectIndicator, ProjectIndicatorResponseDto.class);
     }
 
@@ -74,6 +81,9 @@ public class ProjectIndicatorService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                     "Requested Project Indicator projectId does not exist!");
         }
+        projectIndicatorPage.getContent().forEach(projectIndicator -> {
+            setProjectAndIndicator(projectIndicator);
+        });
         return projectIndicatorPage;
     }
 
@@ -83,6 +93,9 @@ public class ProjectIndicatorService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                     "Requested Project Indicator indicatorId does not exist!");
         }
+        projectIndicatorPage.getContent().forEach(projectIndicator -> {
+            setProjectAndIndicator(projectIndicator);
+        });
         return projectIndicatorPage;
     }
 
@@ -92,6 +105,9 @@ public class ProjectIndicatorService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                     "Requested Project Indicator indicatorId does not exist!");
         }
+        projectIndicatorPage.getContent().forEach(projectIndicator -> {
+            setProjectAndIndicator(projectIndicator);
+        });
         return projectIndicatorPage;
     }
 
@@ -101,6 +117,9 @@ public class ProjectIndicatorService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                     "Requested Project Indicator indicatorId does not exist!");
         }
+        projectIndicatorPage.getContent().forEach(projectIndicator -> {
+            setProjectAndIndicator(projectIndicator);
+        });
         return projectIndicatorPage;
     }
 
@@ -112,5 +131,16 @@ public class ProjectIndicatorService {
         projectIndicator.setIsActive(request.getIsActive());
         projectIndicator.setUpdatedBy(userCurrent.getId());
         projectIndicatorRepository.save(projectIndicator);
+    }
+
+    private void setProjectAndIndicator(ProjectIndicator projectIndicator) {
+        Project project = projectRepository.findById(projectIndicator.getProjectId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Id does not exist"));
+        projectIndicator.setProject(project.getName());
+        IndicatorDictionary indicatorDictionary = indicatorDictionaryRepository.findById(projectIndicator.getIndicatorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Indicator Id does not exist"));
+        projectIndicator.setIndicator(indicatorDictionary.getName());
     }
 }
