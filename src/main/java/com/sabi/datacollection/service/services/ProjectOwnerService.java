@@ -8,11 +8,11 @@ import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerActivationResponse;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerResponseDto;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
+import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.OrganisationType;
 import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.core.models.ProjectOwnerUser;
-import com.sabi.datacollection.service.helper.DataConstants;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.LGARepository;
 import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
@@ -119,7 +119,7 @@ public class ProjectOwnerService {
         }
         String password = request.getPassword();
         user.setPassword(passwordEncoder.encode(password));
-        user.setUserCategory(DataConstants.PROJECT_OWNER_USER);
+        user.setUserCategory(UserCategory.PROJECT_OWNER.toString());
         user.setUsername(request.getEmail());
         user.setLoginAttempts(0);
         user.setResetToken(Utility.registrationCode("HHmmss"));

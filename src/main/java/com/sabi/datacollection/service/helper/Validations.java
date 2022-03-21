@@ -2,6 +2,7 @@ package com.sabi.datacollection.service.helper;
 
 
 import com.sabi.datacollection.core.dto.request.*;
+import com.sabi.datacollection.core.enums.Location;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.core.models.LGA;
@@ -57,11 +58,17 @@ public class Validations {
     @Autowired
     private ProjectLocationRepository projectLocationRepository;
 
-//    @Autowired
-//    private SubmissionRepository submissionRepository;
+    @Autowired
+    private SubmissionRepository submissionRepository;
 
     @Autowired
     private CommentDictionaryRepository commentDictionaryRepository;
+
+//    @Autowired
+//    private FormRepository formRepository;
+
+//    @Autowired
+//    private WalletRepository walletRepository;
 
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
@@ -360,12 +367,12 @@ public class Validations {
     public void validateProjectLocation(ProjectLocationDto projectLocationDto) {
         if (projectLocationDto.getLocationType() == null || projectLocationDto.getLocationType().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Location Type cannot be empty");
-        if (projectLocationDto.getLocationType().equalsIgnoreCase(DataConstants.LOCATION_STATE)) {
+        if (projectLocationDto.getLocationType().equalsIgnoreCase(Location.STATE.toString())) {
             stateRepository.findById(projectLocationDto.getLocationId())
                     .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                             "Enter valid location Id"));
         }
-        if (projectLocationDto.getLocationType().equalsIgnoreCase(DataConstants.LOCATION_LGA)) {
+        if (projectLocationDto.getLocationType().equalsIgnoreCase(Location.LGA.toString())) {
             lgaRepository.findById(projectLocationDto.getLocationId())
                     .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                             "Enter valid location Id"));
@@ -401,9 +408,9 @@ public class Validations {
         if (request.getCommentId() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "commentId cannot be empty");
 
-//        submissionRepository.findById(request.getSubmissionId())
-//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-//                        " Enter a valid Submission Id!"));
+        submissionRepository.findById(request.getSubmissionId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Submission Id!"));
 
         commentDictionaryRepository.findById(request.getCommentId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -440,6 +447,51 @@ public class Validations {
         projectRepository.findById(projectBillingRequestDto.getProjectId())
                 .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid project Id"));
         // Validate other parameters as needed and as introduced in the ProjectBilling Model.
+    }
+
+    public void validateSubmission(SubmissionDto request) {
+        if (request.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "projectId cannot be empty");
+        if (request.getCommentId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "commentId cannot be empty");
+
+        if (request.getFormId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "formId cannot be empty");
+
+        if (request.getEnumeratorId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "enumeratorId cannot be empty");
+
+        enumeratorRepository.findById(request.getEnumeratorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Enumerator Id!"));
+
+        commentDictionaryRepository.findById(request.getCommentId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Comment Id!"));
+
+//        formRepository.findById(request.getFormId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Form Id!"));
+    }
+
+    public void validateForm(FormDto request) {
+        if (request.getName() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "name cannot be empty");
+        if (request.getVersion() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
+        if (request.getDescription() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "description cannot be empty");
+    }
+
+    public void validateTransaction(TransactionDto request) {
+        if (request.getWalletId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "walletId cannot be empty");
+        if (request.getAmount() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "amount cannot be empty");
+
+//        walletRepository.findById(request.getWalletId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Wallet Id!"));
     }
 
 }

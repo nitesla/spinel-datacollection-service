@@ -10,11 +10,11 @@ import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
+import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.Enumerator;
 import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.OrganisationType;
 import com.sabi.datacollection.core.models.State;
-import com.sabi.datacollection.service.helper.DataConstants;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.LGARepository;
@@ -131,7 +131,7 @@ public class EnumeratorService {
         }
         String password = request.getPassword();
         user.setPassword(passwordEncoder.encode(password));
-        user.setUserCategory(DataConstants.ENUMERATOR_USER);
+        user.setUserCategory(UserCategory.ENUMERATOR.toString());
         user.setUsername(request.getEmail());
         user.setLoginAttempts(0);
         user.setResetToken(Utility.registrationCode("HHmmss"));
