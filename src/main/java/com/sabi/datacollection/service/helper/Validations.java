@@ -40,6 +40,8 @@ public class Validations {
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
 
+    //private final FormRepository formRepository;
+
     @Autowired
     private OrganisationTypeRepository organisationTypeRepository;
 
@@ -406,6 +408,38 @@ public class Validations {
         commentDictionaryRepository.findById(request.getCommentId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Comment Id!"));
+    }
+
+    public void validateProjectEnumerator(ProjectEnumeratorRequestDto projectEnumeratorRequestDto) {
+        if (projectEnumeratorRequestDto.getEnumeratorId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"enumeratorId can not be empty");
+        if (projectEnumeratorRequestDto.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId cannot be empty");
+        projectRepository.findById(projectEnumeratorRequestDto.getProjectId())
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid Project Id"));
+        enumeratorRepository.findById(projectEnumeratorRequestDto.getEnumeratorId())
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Enumerator Id"));
+    }
+
+    public void validateProjectForm(ProjectFormRequestDto projectFormRequestDto) {
+        if (projectFormRequestDto.getFormId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"FormId cannot be empty ");
+        if (projectFormRequestDto.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId cannot be empty");
+        projectRepository.findById(projectFormRequestDto.getProjectId())
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid Project Id"));
+
+        //formRepository.findById(projectFormRequestDto.getFormId())
+        //        .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid Form Id"));
+
+    }
+    public void validateProjectBilling(ProjectBillingRequestDto projectBillingRequestDto) {
+        if (projectBillingRequestDto.getProjectId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"ProjectId cannot be empty");
+        // Validate other parameters as needed and as introduced in the ProjectBilling Model.
+        projectRepository.findById(projectBillingRequestDto.getProjectId())
+                .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"Enter a valid project Id"));
+        // Validate other parameters as needed and as introduced in the ProjectBilling Model.
     }
 
 }
