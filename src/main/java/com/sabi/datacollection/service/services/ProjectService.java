@@ -5,7 +5,11 @@ import com.sabi.datacollection.core.dto.request.ProjectDto;
 import com.sabi.datacollection.core.dto.response.ProjectResponseDto;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Project;
+import com.sabi.datacollection.core.models.ProjectCategory;
+import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.service.helper.Validations;
+import com.sabi.datacollection.service.repositories.ProjectCategoryRepository;
+import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
@@ -28,11 +32,15 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectOwnerRepository projectOwnerRepository;
+    private final ProjectCategoryRepository projectCategoryRepository;
     private final ModelMapper mapper;
     private final Validations validations;
 
-    public ProjectService(ProjectRepository projectRepository, ModelMapper mapper, Validations validations) {
+    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, ModelMapper mapper, Validations validations) {
         this.projectRepository = projectRepository;
+        this.projectOwnerRepository = projectOwnerRepository;
+        this.projectCategoryRepository = projectCategoryRepository;
         this.mapper = mapper;
         this.validations = validations;
     }
@@ -83,6 +91,7 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Id does not exist!"));
+        setProjectOwnerAndProjectCategory(project);
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -91,6 +100,9 @@ public class ProjectService {
         if (projects == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
+        projects.forEach(project -> {
+            setProjectOwnerAndProjectCategory(project);
+        });
         return projects;
     }
 
@@ -99,6 +111,9 @@ public class ProjectService {
         if (projects == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
+        projects.getContent().forEach(project -> {
+            setProjectOwnerAndProjectCategory(project);
+        });
         return projects;
 
     }
@@ -115,6 +130,24 @@ public class ProjectService {
     }
 
     public List<Project> getAll(Boolean isActive){
-        return projectRepository.findByIsActive(isActive);
+        List<Project> projects = projectRepository.findByIsActive(isActive);
+        projects.forEach(project -> {
+            setProjectOwnerAndProjectCategory(project);
+        });
+        return projects;
+    }
+
+    private void setProjectOwnerAndProjectCategory(Project project) {
+        ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId())
+            .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested Project Owner Id does not exist"));
+        if(projectOwner.getLastname() != null && projectOwner.getLastname() != null){
+            String projectOwnerName = projectOwner.getFirstname() + " " + projectOwner.getLastname();
+            project.setProjectOwner(projectOwnerName);
+        }
+        ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Category Id does not exist"));
+        project.setProjectCategory(projectCategory.getName());
     }
 }

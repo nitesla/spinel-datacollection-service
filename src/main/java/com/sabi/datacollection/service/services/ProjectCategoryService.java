@@ -5,8 +5,10 @@ import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectCategoryDto;
 import com.sabi.datacollection.core.dto.response.ProjectCategoryResponseDto;
 import com.sabi.datacollection.core.models.ProjectCategory;
+import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.ProjectCategoryRepository;
+import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
@@ -26,11 +28,13 @@ import java.util.List;
 public class ProjectCategoryService {
 
 
+    private final ProjectOwnerRepository projectOwnerRepository;
     private final ProjectCategoryRepository projectCategoryRepository;
     private final ModelMapper mapper;
     private final Validations validations;
 
-    public ProjectCategoryService(ProjectCategoryRepository projectCategoryRepository, ModelMapper mapper, Validations validations) {
+    public ProjectCategoryService(ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, ModelMapper mapper, Validations validations) {
+        this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
         this.mapper = mapper;
         this.validations = validations;
@@ -47,6 +51,7 @@ public class ProjectCategoryService {
         projectCategory.setCreatedBy(userCurrent.getId());
         projectCategory.setIsActive(true);
         projectCategoryRepository.save(projectCategory);
+        setProjectOwner(projectCategory);
         log.info("Created new Project Category - {}", projectCategory);
         return mapper.map(projectCategory, ProjectCategoryResponseDto.class);
     }
@@ -60,6 +65,7 @@ public class ProjectCategoryService {
         mapper.map(request, projectCategory);
         projectCategory.setUpdatedBy(userCurrent.getId());
         projectCategoryRepository.save(projectCategory);
+        setProjectOwner(projectCategory);
         log.info("Project Category record updated - {}", projectCategory);
         return mapper.map(projectCategory, ProjectCategoryResponseDto.class);
     }
@@ -68,6 +74,7 @@ public class ProjectCategoryService {
         ProjectCategory projectCategory = projectCategoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Category Id does not exist!"));
+        setProjectOwner(projectCategory);
         return mapper.map(projectCategory, ProjectCategoryResponseDto.class);
     }
 
@@ -77,6 +84,9 @@ public class ProjectCategoryService {
         if (projectCategories == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
+        projectCategories.getContent().forEach(projectCategory -> {
+            setProjectOwner(projectCategory);
+        });
         return projectCategories;
 
     }
@@ -93,6 +103,23 @@ public class ProjectCategoryService {
     }
 
     public List<ProjectCategory> getAll(Boolean isActive){
-        return projectCategoryRepository.findByIsActive(isActive);
+        List<ProjectCategory> projectCategories = projectCategoryRepository.findByIsActive(isActive);
+        projectCategories.forEach(projectCategory -> {
+            setProjectOwner(projectCategory);
+        });
+        return projectCategories;
     }
+
+    private void setProjectOwner(ProjectCategory projectCategory) {
+        if(projectCategory.getProjectOwnerId() != null) {
+            ProjectOwner projectOwner = projectOwnerRepository.findById(projectCategory.getProjectOwnerId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Requested Project Owner Id does not exist"));
+            if (projectOwner.getLastname() != null && projectOwner.getLastname() != null) {
+                String projectOwnerName = projectOwner.getFirstname() + " " + projectOwner.getLastname();
+                projectCategory.setProjectOwner(projectOwnerName);
+            }
+        }
+    }
+
 }
