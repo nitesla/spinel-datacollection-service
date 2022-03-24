@@ -494,6 +494,18 @@ public class Validations {
 //                        " Enter a valid Wallet Id!"));
     }
 
+    public void validateBank(BankDto bankDto) {
+        String valName = bankDto.getName();
+        char valCharName = valName.charAt(0);
+        if (Character.isDigit(valCharName)){
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name can not start with a number");
+        }
+        if (bankDto.getName() == null || bankDto.getName().trim().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (bankDto.getCode() == null || bankDto.getCode().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Bank code cannot be empty");
+    }
+
 }
 
 
