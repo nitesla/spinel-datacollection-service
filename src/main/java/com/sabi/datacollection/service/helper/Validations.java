@@ -40,6 +40,8 @@ public class Validations {
     private final SectorRepository sectorRepository;
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
+    private final DataRoleRepository dataRoleRepository;
+    private final DataPermissionRepository dataPermissionRepository;
 
     //private final FormRepository formRepository;
 
@@ -71,7 +73,7 @@ public class Validations {
 //    private WalletRepository walletRepository;
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataRoleRepository dataRoleRepository, DataPermissionRepository dataPermissionRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -82,6 +84,8 @@ public class Validations {
         this.sectorRepository = sectorRepository;
         this.indicatorDictionaryRepository = indicatorDictionaryRepository;
         this.dataSetRepository = dataSetRepository;
+        this.dataRoleRepository = dataRoleRepository;
+        this.dataPermissionRepository = dataPermissionRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -504,6 +508,25 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
         if (bankDto.getCode() == null || bankDto.getCode().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Bank code cannot be empty");
+    }
+
+    public void validateRole(DataRoleDto roleDto) {
+        if (roleDto.getName() == null || roleDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (roleDto.getName().length() < 2 || roleDto.getName().length() > 100)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid name  length");
+
+    }
+
+    public void validatePermission(DataPermissionDto permissionDto) {
+
+        if (permissionDto.getName() == null || permissionDto.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (permissionDto.getName().length() < 2 || permissionDto.getName().length() > 100)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid name  length");
+
+        if (permissionDto.getAppPermission() == null || permissionDto.getAppPermission().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "App permission cannot be empty");
     }
 
 }
