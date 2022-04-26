@@ -46,6 +46,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -379,7 +380,7 @@ public class EnumeratorService {
     public List<Enumerator> getAll(Boolean isActive){
         List<Enumerator> enumeratorProperties = repository.findByIsActive(isActive);
         for (Enumerator part : enumeratorProperties
-                ) {
+        ) {
             LGA lga = lgaRepository.findLGAById(part.getLgaId());
             OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId());
 
@@ -397,5 +398,27 @@ public class EnumeratorService {
         }
         return enumeratorProperties;
 
+    }
+
+    public Page<Enumerator> getAll(Boolean isActive, Pageable pageable){
+        Page<Enumerator> enumeratorPropertyPage = repository.findByIsActive(isActive, pageable);
+        for (Enumerator part : enumeratorPropertyPage.getContent()
+        ) {
+            LGA lga = lgaRepository.findLGAById(part.getLgaId());
+            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId());
+
+
+            if (organisationType == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
+            }
+            part.setOrganisationType(organisationType.getName());
+
+            if (lga == null){
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "LGA type is null");
+            }
+            part.setLga(lga.getName());
+
+        }
+        return enumeratorPropertyPage;
     }
 }
