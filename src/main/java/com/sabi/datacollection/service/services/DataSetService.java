@@ -44,6 +44,7 @@ public class DataSetService {
         }
         dataSet.setCreatedBy(userCurrent.getId());
         dataSet.setIsActive(true);
+        dataSet.setIsEnabled(true);
         dataSetRepository.save(dataSet);
         log.info("Created new DataSet Category - {}", dataSet);
         return mapper.map(dataSet, DataSetResponseDto.class);
@@ -88,6 +89,16 @@ public class DataSetService {
         dataSet.setUpdatedBy(userCurrent.getId());
         dataSetRepository.save(dataSet);
 
+    }
+
+    public void enableDisableDataSet (EnableDisableDto request) {
+        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
+        DataSet dataSet = dataSetRepository.findById(request.getId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested DataSet Id does not exist!"));
+        dataSet.setIsEnabled(request.getIsActive());
+        dataSet.setUpdatedBy(userCurrent.getId());
+        dataSetRepository.save(dataSet);
     }
 
     public List<DataSet> getAll(Boolean isActive){
