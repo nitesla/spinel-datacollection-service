@@ -121,7 +121,6 @@ public class DataRoleService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         return roles;
-
     }
 
 
@@ -147,5 +146,9 @@ public class DataRoleService {
                         " Disable/Enable role Request for:" +  role.getId()
                                 + " " +  role.getName(),1, Utility.getClientIp(request1));
         dataRoleRepository.save(role);
+    }
+
+    public List<DataRole> getAll(){
+        return dataRoleRepository.findAll();
     }
 }
