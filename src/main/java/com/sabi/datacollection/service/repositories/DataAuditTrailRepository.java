@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface DataAuditTrailRepository extends JpaRepository<DataAuditTrail, Long> {
+    Page<DataAuditTrail> findDataAuditTrailByUsername(String username, Pageable pageable);
 
     @Query("select a from DataAuditTrail a where ((:username IS NULL) OR (:username IS NOT NULL AND a.username like %:username%)) " +
             " AND ((:event IS NULL) OR (:event IS NOT NULL AND a.event = :event))"+

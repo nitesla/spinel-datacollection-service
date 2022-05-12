@@ -9,9 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @Service
@@ -42,6 +44,10 @@ public class DataAuditTrailService {
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested id does not exist!"));
         return auditTrail;
+    }
+
+    public Page<DataAuditTrail> getUserAudit(String username, PageRequest pageRequest){
+        return auditTrailRepository.findDataAuditTrailByUsername(username, pageRequest);
     }
 
 

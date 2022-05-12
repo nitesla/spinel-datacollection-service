@@ -43,6 +43,7 @@ public class DataRoleService {
         this.auditTrailService = auditTrailService;
     }
 
+    @Deprecated
     public DataRoleResponseDto createRole(DataRoleDto request, HttpServletRequest request1) {
         validations.validateRole(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
