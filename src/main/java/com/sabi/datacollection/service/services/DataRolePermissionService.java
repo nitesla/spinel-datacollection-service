@@ -5,6 +5,7 @@ import com.sabi.datacollection.core.dto.request.CreateRolePermissionsDto;
 import com.sabi.datacollection.core.dto.request.EnableDisEnableDto;
 import com.sabi.datacollection.core.dto.response.DataRolePermissionResponseDto;
 import com.sabi.datacollection.core.dto.response.DataRoleResponseDto;
+import com.sabi.datacollection.core.enums.AuditTrailFlag;
 import com.sabi.datacollection.core.models.DataPermission;
 import com.sabi.datacollection.core.models.DataRole;
 import com.sabi.datacollection.core.models.DataRolePermission;
@@ -16,7 +17,6 @@ import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
-import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class DataRolePermissionService {
         this.auditTrailService = auditTrailService;
     }
 
-    public void assignPermission(CreateRolePermissionsDto request) {
+    public DataRoleResponseDto assignPermission(CreateRolePermissionsDto request, HttpServletRequest request1) {
         validations.validateRolePermission(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         DataRole role = mapper.map(request,DataRole.class);
@@ -71,21 +72,19 @@ public class DataRolePermissionService {
             rolePermission.setRoleId(savedRole.getId());
             rolePermission.setCreatedBy(userCurrent.getId());
             log.info(" role permission details " + rolePermission);
-            DataRolePermission exist = dataRolePermissionRepository.findByRoleIdAndPermissionId(request.getRoleId(),p.getPermissionId());
+            DataRolePermission exist = dataRolePermissionRepository.findByRoleIdAndPermissionId(savedRole.getId(),p.getPermissionId());
             if(exist != null){
                 throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Permission id already assigned to the role ::::"+p.getPermissionId());
             }
             dataRolePermissionRepository.save(rolePermission);
             rolePerm.add(rolePermission);
-
-            auditTrailService
-                    .logEvent(userCurrent.getUsername(),
-                            "Create new role by :" + userCurrent.getUsername(),
-                            AuditTrailFlag.CREATE,
-                            " Create new role for:" + role.getName(),1, Utility.getClientIp(request1));
-            return mapper.map(role, DataRoleResponseDto.class);
-
         });
+        auditTrailService
+        .logEvent(userCurrent.getUsername(),
+                "Create new role by :" + userCurrent.getUsername(),
+                AuditTrailFlag.CREATE,
+                " Create new role for:" + role.getName(),1, Utility.getClientIp(request1));
+        return mapper.map(role, DataRoleResponseDto.class);
     }
 
     public DataRolePermissionResponseDto findRolePermission(Long id) {
