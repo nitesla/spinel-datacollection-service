@@ -91,7 +91,7 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Id does not exist!"));
-        setProjectOwnerAndProjectCategory(project);
+        setTransientFields(project);
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -101,7 +101,32 @@ public class ProjectService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projects.forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
+            project.setProjectCount(projects.size());
+        });
+        return projects;
+    }
+
+    public List<Project> findProjectByStatusAndCategory(String status, Long categoryId) {
+        validations.validateProjectStatus(status);
+        List<Project> projects = projectRepository.findByStatusAndProjectCategoryId(Status.valueOf(status), categoryId);
+        if (projects == null) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+        }
+        projects.forEach(project -> {
+            setTransientFields(project);
+        });
+        return projects;
+    }
+
+    public List<Project> findProjectByCategory(Long categoryId) {
+        List<Project> projects = projectRepository.findByProjectCategoryId(categoryId);
+        if (projects == null) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+        }
+        projects.forEach(project -> {
+            setTransientFields(project);
+            project.setProjectCount(projects.size());
         });
         return projects;
     }
@@ -112,7 +137,7 @@ public class ProjectService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projects.getContent().forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
         });
         return projects;
 
@@ -132,22 +157,32 @@ public class ProjectService {
     public List<Project> getAll(Boolean isActive){
         List<Project> projects = projectRepository.findByIsActive(isActive);
         projects.forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
         });
         return projects;
     }
 
-    private void setProjectOwnerAndProjectCategory(Project project) {
-        ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId())
-            .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                    "Requested Project Owner Id does not exist"));
-        if(projectOwner.getLastname() != null && projectOwner.getLastname() != null){
-            String projectOwnerName = projectOwner.getFirstname() + " " + projectOwner.getLastname();
-            project.setProjectOwner(projectOwnerName);
+    public List<Project> findProjectByProjectOwner(Long projectOwnerId) {
+        return projectRepository.findByProjectOwnerId(projectOwnerId);
+    }
+
+    private void setTransientFields(Project project) {
+        if(project.getProjectOwnerId() != null) {
+            ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Requested Project Owner Id does not exist"));
+            if(projectOwner.getFirstname() != null && projectOwner.getLastname() != null) {
+                project.setProjectOwner(projectOwner.getFirstname() + " " + projectOwner.getLastname());
+            }
+            project.setClientType(projectOwnerRepository.findById(projectOwner.getId()).get().getIsCorp() ? "Corporate" : "Individual");
         }
-        ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested Project Category Id does not exist"));
-        project.setProjectCategory(projectCategory.getName());
+
+        if (project.getProjectCategoryId() != null) {
+            ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Requested Project Category Id does not exist"));
+            project.setProjectCategory(projectCategory.getName());
+            project.setProjectCategoryDescription(projectCategory.getDescription());
+        }
     }
 }

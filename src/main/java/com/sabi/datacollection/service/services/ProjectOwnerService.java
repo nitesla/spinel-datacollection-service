@@ -9,15 +9,9 @@ import com.sabi.datacollection.core.dto.response.ProjectOwnerActivationResponse;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerResponseDto;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
 import com.sabi.datacollection.core.enums.UserCategory;
-import com.sabi.datacollection.core.models.LGA;
-import com.sabi.datacollection.core.models.OrganisationType;
-import com.sabi.datacollection.core.models.ProjectOwner;
-import com.sabi.datacollection.core.models.ProjectOwnerUser;
+import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.LGARepository;
-import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
-import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
-import com.sabi.datacollection.service.repositories.ProjectOwnerUserRepository;
+import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
 import com.sabi.framework.dto.requestDto.ForgetPasswordDto;
 import com.sabi.framework.exceptions.BadRequestException;
@@ -30,10 +24,7 @@ import com.sabi.framework.notification.requestDto.*;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
-import com.sabi.framework.service.AuditTrailService;
-import com.sabi.framework.service.NotificationService;
-import com.sabi.framework.service.TokenService;
-import com.sabi.framework.service.WhatsAppService;
+import com.sabi.framework.service.*;
 import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
@@ -74,10 +65,12 @@ public class ProjectOwnerService {
     private final ModelMapper mapper;
     private final Validations validations;
     private final UserRoleRepository userRoleRepository;
+    private final ProjectRepository projectRepository;
+    private final UserService userService;
 
     public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository,
                                AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
-                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository) {
+                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService) {
         this.projectOwnerUserRepository = projectOwnerUserRepository;
         this.organisationTypeRepository = organisationTypeRepository;
         this.lgaRepository = lgaRepository;
@@ -89,6 +82,8 @@ public class ProjectOwnerService {
         this.mapper = mapper;
         this.validations = validations;
         this.userRoleRepository = userRoleRepository;
+        this.projectRepository = projectRepository;
+        this.userService = userService;
     }
 
     public ProjectOwnerSignUpResponseDto projectOwnerSignUp(ProjectOwnerSignUpDto request, HttpServletRequest request1) {
@@ -195,7 +190,11 @@ public class ProjectOwnerService {
                 .phoneNumber(emailRecipient.getPhone())
                 .build();
         whatsAppService.whatsAppNotification(whatsAppRequest);
-
+        VoiceOtpRequest voiceOtpRequest = VoiceOtpRequest.builder()
+                .message("Activation Otp is " + " " + user.getResetToken())
+                .phoneNumber(emailRecipient.getPhone())
+                .build();
+        notificationService.voiceOtp(voiceOtpRequest);
         auditTrailService
                 .logEvent(response.getUsername(),
                         "SignUp Project Owner :" + response.getUsername(),
@@ -306,14 +305,7 @@ public class ProjectOwnerService {
         ProjectOwner projectOwner = projectOwnerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
-        LGA lga = lgaRepository.findById(projectOwner.getLgaId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested lga Id does not exist"));
-        OrganisationType organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested organisation type does not exist"));
-        projectOwner.setLga(lga.getName());
-        projectOwner.setOrganisationType(organisationType.getName());
+        setTransientFields(projectOwner);
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
     }
 
@@ -323,15 +315,7 @@ public class ProjectOwnerService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projectOwners.getContent().forEach(projectOwner -> {
-            if(projectOwner.getLgaId() != null ){
-                LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-                projectOwner.setLga(lga.getName());
-            }
-            if(projectOwner.getOrganisationTypeId() != null){
-                OrganisationType organisationType = organisationTypeRepository
-                        .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
-                projectOwner.setOrganisationType(organisationType.getName());
-            }
+            setTransientFields(projectOwner);
         });
         return projectOwners;
     }
@@ -357,126 +341,40 @@ public class ProjectOwnerService {
         List<ProjectOwner> projectOwners = projectOwnerRepository.findByIsActive(isActive);
 
         for ( ProjectOwner projectOwner: projectOwners){
-            LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-            OrganisationType organisationType = organisationTypeRepository
-                    .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
-            if (lga == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "lga is null");
-            }
-            projectOwner.setLga(lga.getName());
-            if (organisationType == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
-            }
-            projectOwner.setOrganisationType(organisationType.getName());
+            setTransientFields(projectOwner);
         }
-
         return projectOwners;
     }
 
     public void changeUserPassword(ChangePasswordDto request) {
-        validations.changePassword(request);
-        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
-        User user = userRepository.findById(request.getId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested user id does not exist!"));
-        mapper.map(request, user);
-        if(getPrevPasswords(user.getId(),request.getPassword())){
-            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Password already used");
-        }
-        if (!getPrevPasswords(user.getId(), request.getPreviousPassword())) {
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid previous password");
-        }
-        String password = request.getPassword();
-        user.setPassword(passwordEncoder.encode(password));
-        user.setIsActive(true);
-        user.setLockedDate(null);
-        user.setUpdatedBy(userCurrent.getId());
-        user = userRepository.save(user);
-
-        PreviousPasswords previousPasswords = PreviousPasswords.builder()
-                .userId(user.getId())
-                .password(user.getPassword())
-                .createdDate(LocalDateTime.now())
-                .build();
-        previousPasswordRepository.save(previousPasswords);
+        userService.changeUserPassword(request);
     }
 
     public Boolean getPrevPasswords(Long userId,String password){
-        List<PreviousPasswords> prev = previousPasswordRepository.previousPasswords(userId);
-        for (PreviousPasswords pass : prev
-        ) {
-            if (passwordEncoder.matches(password, pass.getPassword())) {
-                return Boolean.TRUE;
-            }
-        }
-        return Boolean.FALSE;
+        return userService.getPrevPasswords(userId, password);
     }
 
     public void forgetPassword (ForgetPasswordDto request) {
+        userService.forgetPassword(request);
+    }
 
-        if(request.getEmail() != null) {
-
-            User user = userRepository.findByEmail(request.getEmail());
-            if (user == null) {
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid email");
-            }
-
-            user.setResetToken(Utility.registrationCode("HHmmss"));
-            user.setResetTokenExpirationDate(Utility.tokenExpiration());
-            userRepository.save(user);
-
-            NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
-            User emailRecipient = userRepository.getOne(user.getId());
-            notificationRequestDto.setMessage("Activation Otp " + " " + user.getResetToken());
-            List<RecipientRequest> recipient = new ArrayList<>();
-            recipient.add(RecipientRequest.builder()
-                    .email(emailRecipient.getEmail())
-                    .build());
-            notificationRequestDto.setRecipient(recipient);
-            notificationService.emailNotificationRequest(notificationRequestDto);
-
-            WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
-                    .message("Activation Otp " + " " + user.getResetToken())
-                    .phoneNumber(emailRecipient.getPhone())
-                    .build();
-            whatsAppService.whatsAppNotification(whatsAppRequest);
-
-        }else if(request.getPhone()!= null) {
-
-            User userPhone = userRepository.findByPhone(request.getPhone());
-            if (userPhone == null) {
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid phone number");
-            }
-            if (userPhone.getIsActive() == false) {
-                throw new BadRequestException(CustomResponseCode.FAILED, "User account has been disabled");
-            }
-            userPhone.setResetToken(Utility.registrationCode("HHmmss"));
-            userPhone.setResetTokenExpirationDate(Utility.tokenExpiration());
-            userRepository.save(userPhone);
-
-
-            NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
-            User emailRecipient = userRepository.getOne(userPhone.getId());
-            notificationRequestDto.setMessage("Activation Otp " + " " + userPhone.getResetToken());
-            List<RecipientRequest> recipient = new ArrayList<>();
-            recipient.add(RecipientRequest.builder()
-                    .email(emailRecipient.getEmail())
-                    .build());
-            notificationRequestDto.setRecipient(recipient);
-            notificationService.emailNotificationRequest(notificationRequestDto);
-
-            SmsRequest smsRequest = SmsRequest.builder()
-                    .message("Activation Otp " + " " + userPhone.getResetToken())
-                    .phoneNumber(emailRecipient.getPhone())
-                    .build();
-            notificationService.smsNotificationRequest(smsRequest);
-
-            WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
-                    .message("Activation Otp " + " " + userPhone.getResetToken())
-                    .phoneNumber(emailRecipient.getPhone())
-                    .build();
-            whatsAppService.whatsAppNotification(whatsAppRequest);
+    private void setTransientFields(ProjectOwner projectOwner){
+        if(projectOwner.getLgaId() != null) {
+            LGA lga = lgaRepository.findById(projectOwner.getLgaId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Requested lga Id does not exist"));
+            projectOwner.setLga(lga.getName());
         }
+        if(projectOwner.getOrganisationTypeId() != null){
+            OrganisationType organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId())
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                            "Requested organisation type does not exist"));
+            projectOwner.setOrganisationType(organisationType.getName());
+        }
+        if(projectOwner.getId() != null)
+            projectOwner.setProjectCount(projectRepository.findByProjectOwnerId(projectOwner.getId()).size());
+        if(projectOwner.getUserId() != null)
+            projectOwner.setUserIsActive(userRepository.findById(projectOwner.getUserId()).get().getIsActive());
 
     }
 }

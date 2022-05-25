@@ -3,12 +3,17 @@ package com.sabi.datacollection.service.services;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectEnumeratorRequestDto;
 import com.sabi.datacollection.core.dto.response.ProjectEnumeratorResponseDto;
+import com.sabi.datacollection.core.models.Enumerator;
+import com.sabi.datacollection.core.models.Project;
 import com.sabi.datacollection.core.models.ProjectEnumerator;
 import com.sabi.datacollection.service.helper.Validations;
+import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.ProjectEnumeratorRepository;
+import com.sabi.datacollection.service.repositories.ProjectRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
+import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.service.TokenService;
 import com.sabi.framework.utils.CustomResponseCode;
 import lombok.extern.slf4j.Slf4j;
@@ -18,21 +23,25 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class ProjectEnumeratorService {
 
     private final ProjectEnumeratorRepository projectEnumeratorRepository;
+    private final ProjectRepository projectRepository;
+    private final EnumeratorRepository enumeratorRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final Validations validations;
 
 
-    public ProjectEnumeratorService(ProjectEnumeratorRepository projectEnumeratorRepository, ModelMapper modelMapper, Validations validations) {
+    public ProjectEnumeratorService(ProjectEnumeratorRepository projectEnumeratorRepository, ProjectRepository projectRepository, EnumeratorRepository enumeratorRepository, UserRepository userRepository, ModelMapper modelMapper, Validations validations) {
         this.projectEnumeratorRepository = projectEnumeratorRepository;
+        this.projectRepository = projectRepository;
+        this.enumeratorRepository = enumeratorRepository;
+        this.userRepository = userRepository;
         this.modelMapper = modelMapper;
         this.validations = validations;
     }
@@ -138,6 +147,7 @@ public class ProjectEnumeratorService {
     public ProjectEnumeratorResponseDto getProjectEnumerator(Long id){
        ProjectEnumerator projectEnumerator = projectEnumeratorRepository.findById(id)
                 .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested ProjectEnumerator does not exist"));
+       setTransientField(projectEnumerator);
        return modelMapper.map(projectEnumerator, ProjectEnumeratorResponseDto.class);
     }
     /**
@@ -150,6 +160,9 @@ public class ProjectEnumeratorService {
         Page<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findProjectEnumerators(projectId,enumeratorId,pageRequest);
         if (projectEnumerators ==null)
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"No records found");
+        for (ProjectEnumerator projectEnumerator: projectEnumerators) {
+            setTransientField(projectEnumerator);
+        }
         return projectEnumerators;
     }
 
@@ -160,7 +173,11 @@ public class ProjectEnumeratorService {
      <remarks>This method searches for all active project enumerators and returns pagination</remarks>
      */
     public List<ProjectEnumerator> getActiveEnumerators(Boolean isActive){
-        return projectEnumeratorRepository.findAllByIsActive(isActive);
+        List<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findAllByIsActive(isActive);
+        for (ProjectEnumerator projectEnumerator: projectEnumerators) {
+            setTransientField(projectEnumerator);
+        }
+        return projectEnumerators;
     }
 
     /**
@@ -176,8 +193,27 @@ public class ProjectEnumeratorService {
         projectEnumerator.setUpdatedBy(userCurrent.getId());
         projectEnumerator.setIsActive(enableDisableDto.getIsActive());
         projectEnumeratorRepository.save(projectEnumerator);
-
     }
 
+    private void setTransientField(ProjectEnumerator projectEnumerator){
+        if(projectEnumerator.getProjectId() != null) {
+            Project project = projectRepository.findById(projectEnumerator.getProjectId())
+                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested Project Id doesn't exist"));
+            projectEnumerator.setDescription(project.getDescription());
+        }
+        if(projectEnumerator.getEnumeratorId() != null) {
+            Enumerator enumerator = enumeratorRepository.findById(projectEnumerator.getEnumeratorId())
+                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested Enumerator Id doesn't exist"));
+            User user = userRepository.findById(enumerator.getUserId())
+                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested User Id doesn't exist"));
+
+            projectEnumerator.setPhoneNumber(enumerator.getPhone());
+            projectEnumerator.setFirstName(user.getFirstName());
+            projectEnumerator.setLastName(user.getLastName());
+            projectEnumerator.setLocation(enumerator.getAddress());
+            projectEnumerator.setEmail(enumerator.getEmail());
+        }
+
+    }
 
 }

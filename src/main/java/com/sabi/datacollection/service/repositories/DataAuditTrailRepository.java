@@ -1,7 +1,6 @@
 package com.sabi.datacollection.service.repositories;
 
 import com.sabi.datacollection.core.models.DataAuditTrail;
-import com.sabi.datacollection.core.models.DataPermission;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
