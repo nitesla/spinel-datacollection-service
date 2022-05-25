@@ -17,6 +17,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByStatus(Status status);
 
+    List<Project> findByStatusAndProjectCategoryId(Status status, Long categoryId);
+
+    List<Project> findByProjectCategoryId(Long categoryId);
+
+    List<Project> findByProjectOwnerId(Long projectOwnerId);
+
     List<Project> findByIsActive(Boolean isActive);
 
     @Query("SELECT p FROM Project p WHERE ((:name IS NULL) OR (:name IS NOT NULL AND p.name like %:name%)) order by p.id desc")
