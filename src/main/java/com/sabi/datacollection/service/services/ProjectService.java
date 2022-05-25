@@ -168,19 +168,17 @@ public class ProjectService {
 
     private void setTransientFields(Project project) {
         if(project.getProjectOwnerId() != null) {
-            ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId())
-                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                            "Requested Project Owner Id does not exist"));
+            ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId()).get();
             if(projectOwner.getFirstname() != null && projectOwner.getLastname() != null) {
                 project.setProjectOwner(projectOwner.getFirstname() + " " + projectOwner.getLastname());
             }
-            project.setClientType(projectOwnerRepository.findById(projectOwner.getId()).get().getIsCorp() ? "Corporate" : "Individual");
+            if(projectOwner != null) {
+                project.setClientType(projectOwnerRepository.findById(projectOwner.getId()).get().getIsCorp() ? "Corporate" : "Individual");
+            }
         }
 
         if (project.getProjectCategoryId() != null) {
-            ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId())
-                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                            "Requested Project Category Id does not exist"));
+            ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId()).get();
             project.setProjectCategory(projectCategory.getName());
             project.setProjectCategoryDescription(projectCategory.getDescription());
         }

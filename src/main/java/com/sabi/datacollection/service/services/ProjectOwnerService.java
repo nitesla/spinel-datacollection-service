@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -360,21 +361,25 @@ public class ProjectOwnerService {
 
     private void setTransientFields(ProjectOwner projectOwner){
         if(projectOwner.getLgaId() != null) {
-            LGA lga = lgaRepository.findById(projectOwner.getLgaId())
-                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                            "Requested lga Id does not exist"));
-            projectOwner.setLga(lga.getName());
+            Optional<LGA> lga = lgaRepository.findById(projectOwner.getLgaId());
+            if(lga.isPresent())
+                projectOwner.setLga(lga.get().getName());
         }
         if(projectOwner.getOrganisationTypeId() != null){
-            OrganisationType organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId())
-                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                            "Requested organisation type does not exist"));
-            projectOwner.setOrganisationType(organisationType.getName());
+            Optional<OrganisationType> organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId());
+            if(organisationType.isPresent())
+                projectOwner.setOrganisationType(organisationType.get().getName());
         }
-        if(projectOwner.getId() != null)
-            projectOwner.setProjectCount(projectRepository.findByProjectOwnerId(projectOwner.getId()).size());
-        if(projectOwner.getUserId() != null)
-            projectOwner.setUserIsActive(userRepository.findById(projectOwner.getUserId()).get().getIsActive());
+        if(projectOwner.getId() != null) {
+            List<Project> projects = projectRepository.findByProjectOwnerId(projectOwner.getId());
+            if(projects.size() > 0)
+            projectOwner.setProjectCount(projects.size());
+        }
+        if(projectOwner.getUserId() != null) {
+            Optional<User> user = userRepository.findById(projectOwner.getUserId());
+            if(user.isPresent())
+                projectOwner.setUserIsActive(user.get().getIsActive());
+        }
 
     }
 }
