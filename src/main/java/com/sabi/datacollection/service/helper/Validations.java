@@ -521,6 +521,13 @@ public class Validations {
 
     }
 
+    public void validateRolePermission(CreateRolePermissionsDto roleDto) {
+        if (roleDto.getRoleName() == null || roleDto.getRoleName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (roleDto.getRoleName().length() < 2 || roleDto.getRoleName().length() > 100)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid name  length");
+    }
+
     public void validatePermission(DataPermissionDto permissionDto) {
 
         if (permissionDto.getName() == null || permissionDto.getName().isEmpty())

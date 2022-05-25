@@ -19,16 +19,14 @@ import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerUserRepository;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
+import com.sabi.framework.dto.requestDto.ForgetPasswordDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.PreviousPasswords;
 import com.sabi.framework.models.User;
 import com.sabi.framework.models.UserRole;
-import com.sabi.framework.notification.requestDto.NotificationRequestDto;
-import com.sabi.framework.notification.requestDto.RecipientRequest;
-import com.sabi.framework.notification.requestDto.SmsRequest;
-import com.sabi.framework.notification.requestDto.WhatsAppRequest;
+import com.sabi.framework.notification.requestDto.*;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
@@ -373,5 +371,112 @@ public class ProjectOwnerService {
         }
 
         return projectOwners;
+    }
+
+    public void changeUserPassword(ChangePasswordDto request) {
+        validations.changePassword(request);
+        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
+        User user = userRepository.findById(request.getId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested user id does not exist!"));
+        mapper.map(request, user);
+        if(getPrevPasswords(user.getId(),request.getPassword())){
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Password already used");
+        }
+        if (!getPrevPasswords(user.getId(), request.getPreviousPassword())) {
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid previous password");
+        }
+        String password = request.getPassword();
+        user.setPassword(passwordEncoder.encode(password));
+        user.setIsActive(true);
+        user.setLockedDate(null);
+        user.setUpdatedBy(userCurrent.getId());
+        user = userRepository.save(user);
+
+        PreviousPasswords previousPasswords = PreviousPasswords.builder()
+                .userId(user.getId())
+                .password(user.getPassword())
+                .createdDate(LocalDateTime.now())
+                .build();
+        previousPasswordRepository.save(previousPasswords);
+    }
+
+    public Boolean getPrevPasswords(Long userId,String password){
+        List<PreviousPasswords> prev = previousPasswordRepository.previousPasswords(userId);
+        for (PreviousPasswords pass : prev
+        ) {
+            if (passwordEncoder.matches(password, pass.getPassword())) {
+                return Boolean.TRUE;
+            }
+        }
+        return Boolean.FALSE;
+    }
+
+    public void forgetPassword (ForgetPasswordDto request) {
+
+        if(request.getEmail() != null) {
+
+            User user = userRepository.findByEmail(request.getEmail());
+            if (user == null) {
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid email");
+            }
+
+            user.setResetToken(Utility.registrationCode("HHmmss"));
+            user.setResetTokenExpirationDate(Utility.tokenExpiration());
+            userRepository.save(user);
+
+            NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
+            User emailRecipient = userRepository.getOne(user.getId());
+            notificationRequestDto.setMessage("Activation Otp " + " " + user.getResetToken());
+            List<RecipientRequest> recipient = new ArrayList<>();
+            recipient.add(RecipientRequest.builder()
+                    .email(emailRecipient.getEmail())
+                    .build());
+            notificationRequestDto.setRecipient(recipient);
+            notificationService.emailNotificationRequest(notificationRequestDto);
+
+            WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
+                    .message("Activation Otp " + " " + user.getResetToken())
+                    .phoneNumber(emailRecipient.getPhone())
+                    .build();
+            whatsAppService.whatsAppNotification(whatsAppRequest);
+
+        }else if(request.getPhone()!= null) {
+
+            User userPhone = userRepository.findByPhone(request.getPhone());
+            if (userPhone == null) {
+                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid phone number");
+            }
+            if (userPhone.getIsActive() == false) {
+                throw new BadRequestException(CustomResponseCode.FAILED, "User account has been disabled");
+            }
+            userPhone.setResetToken(Utility.registrationCode("HHmmss"));
+            userPhone.setResetTokenExpirationDate(Utility.tokenExpiration());
+            userRepository.save(userPhone);
+
+
+            NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
+            User emailRecipient = userRepository.getOne(userPhone.getId());
+            notificationRequestDto.setMessage("Activation Otp " + " " + userPhone.getResetToken());
+            List<RecipientRequest> recipient = new ArrayList<>();
+            recipient.add(RecipientRequest.builder()
+                    .email(emailRecipient.getEmail())
+                    .build());
+            notificationRequestDto.setRecipient(recipient);
+            notificationService.emailNotificationRequest(notificationRequestDto);
+
+            SmsRequest smsRequest = SmsRequest.builder()
+                    .message("Activation Otp " + " " + userPhone.getResetToken())
+                    .phoneNumber(emailRecipient.getPhone())
+                    .build();
+            notificationService.smsNotificationRequest(smsRequest);
+
+            WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
+                    .message("Activation Otp " + " " + userPhone.getResetToken())
+                    .phoneNumber(emailRecipient.getPhone())
+                    .build();
+            whatsAppService.whatsAppNotification(whatsAppRequest);
+        }
+
     }
 }
