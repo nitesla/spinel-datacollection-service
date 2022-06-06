@@ -13,15 +13,20 @@ import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
+import com.sabi.framework.models.AuditTrail;
 import com.sabi.framework.models.User;
+import com.sabi.framework.service.AuditTrailService;
 import com.sabi.framework.service.TokenService;
+import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
+import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,18 +39,20 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectOwnerRepository projectOwnerRepository;
     private final ProjectCategoryRepository projectCategoryRepository;
+    private final AuditTrailService auditTrailService;
     private final ModelMapper mapper;
     private final Validations validations;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, ModelMapper mapper, Validations validations) {
+    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations) {
         this.projectRepository = projectRepository;
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
+        this.auditTrailService = auditTrailService;
         this.mapper = mapper;
         this.validations = validations;
     }
 
-    public ProjectResponseDto createProject(ProjectDto request) {
+    public ProjectResponseDto createProject(ProjectDto request,  HttpServletRequest request1) {
         validations.validateProject(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Project projectExists = projectRepository.findByName(request.getName());
@@ -71,6 +78,13 @@ public class ProjectService {
 
         projectRepository.save(project);
         log.info("Created new Project  - {}", project);
+        auditTrailService
+                .logEvent(userCurrent.getUsername(),
+                        userCurrent.getUsername() + " created " + project.getName(),
+                AuditTrailFlag.SIGNUP,
+                "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
+
+
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -87,7 +101,7 @@ public class ProjectService {
         return mapper.map(project, ProjectResponseDto.class);
     }
 
-    public ProjectResponseDto findProjectById(Long id){
+    public ProjectResponseDto findProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Id does not exist!"));
@@ -164,6 +178,11 @@ public class ProjectService {
 
     public List<Project> findProjectByProjectOwner(Long projectOwnerId) {
         return projectRepository.findByProjectOwnerId(projectOwnerId);
+    }
+
+    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, PageRequest pageRequest) {
+        String event = username + " created " + projectName;
+        return auditTrailService.findAll(username, event, String.valueOf(AuditTrailFlag.CREATE), null, null, pageRequest);
     }
 
     private void setTransientFields(Project project) {
