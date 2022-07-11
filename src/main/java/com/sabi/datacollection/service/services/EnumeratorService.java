@@ -404,20 +404,11 @@ public class EnumeratorService {
         Page<Enumerator> enumeratorPropertyPage = repository.findByIsActive(isActive, pageable);
         for (Enumerator part : enumeratorPropertyPage.getContent()
         ) {
-            LGA lga = lgaRepository.findLGAById(part.getLgaId());
-            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId());
+            if(part.getLgaId() != null)
+                part.setLga( lgaRepository.findLGAById(part.getLgaId()).getName());
 
-
-            if (organisationType == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
-            }
-            part.setOrganisationType(organisationType.getName());
-
-            if (lga == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "LGA type is null");
-            }
-            part.setLga(lga.getName());
-
+            if(part.getOrganisationTypeId() != null)
+                part.setOrganisationType(organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId()).getName());
         }
         return enumeratorPropertyPage;
     }
