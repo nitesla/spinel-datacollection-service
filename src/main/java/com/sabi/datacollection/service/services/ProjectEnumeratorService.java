@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -197,21 +198,23 @@ public class ProjectEnumeratorService {
 
     private void setTransientField(ProjectEnumerator projectEnumerator){
         if(projectEnumerator.getProjectId() != null) {
-            Project project = projectRepository.findById(projectEnumerator.getProjectId())
-                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested Project Id doesn't exist"));
-            projectEnumerator.setDescription(project.getDescription());
-        }
-        if(projectEnumerator.getEnumeratorId() != null) {
-            Enumerator enumerator = enumeratorRepository.findById(projectEnumerator.getEnumeratorId())
-                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested Enumerator Id doesn't exist"));
-            User user = userRepository.findById(enumerator.getUserId())
-                    .orElseThrow(()->new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The requested User Id doesn't exist"));
+            Optional<Project> project = projectRepository.findById(projectEnumerator.getProjectId());
+            project.ifPresent(value -> projectEnumerator.setDescription(value.getDescription()));
 
-            projectEnumerator.setPhoneNumber(enumerator.getPhone());
-            projectEnumerator.setFirstName(user.getFirstName());
-            projectEnumerator.setLastName(user.getLastName());
-            projectEnumerator.setLocation(enumerator.getAddress());
-            projectEnumerator.setEmail(enumerator.getEmail());
+        }
+        Optional<User> user;
+        if(projectEnumerator.getEnumeratorId() != null) {
+            Optional<Enumerator> enumerator = enumeratorRepository.findById(projectEnumerator.getEnumeratorId());
+            if(enumerator.isPresent()) {
+                user = userRepository.findById(enumerator.get().getUserId());
+                projectEnumerator.setPhoneNumber(enumerator.get().getPhone());
+                projectEnumerator.setLocation(enumerator.get().getAddress());
+                projectEnumerator.setEmail(enumerator.get().getEmail());
+                if(user.isPresent()){
+                    projectEnumerator.setFirstName(user.get().getFirstName());
+                    projectEnumerator.setLastName(user.get().getLastName());
+                }
+            }
         }
 
     }
