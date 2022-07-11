@@ -9,7 +9,9 @@ import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.repositories.*;
-import com.sabi.framework.dto.requestDto.*;
+import com.sabi.framework.dto.requestDto.ChangePasswordDto;
+import com.sabi.framework.dto.requestDto.CreateTransactionPinDto;
+import com.sabi.framework.dto.requestDto.GeneratePassword;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
@@ -488,6 +490,9 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
         if (request.getDescription() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "description cannot be empty");
+        projectOwnerRepository.findById(request.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Owner id!"));
     }
 
     public void validateTransaction(TransactionDto request) {
