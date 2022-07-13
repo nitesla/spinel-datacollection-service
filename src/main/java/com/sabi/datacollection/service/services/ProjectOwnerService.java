@@ -9,33 +9,22 @@ import com.sabi.datacollection.core.dto.response.ProjectOwnerActivationResponse;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerResponseDto;
 import com.sabi.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
 import com.sabi.datacollection.core.enums.UserCategory;
-import com.sabi.datacollection.core.models.LGA;
-import com.sabi.datacollection.core.models.OrganisationType;
-import com.sabi.datacollection.core.models.ProjectOwner;
-import com.sabi.datacollection.core.models.ProjectOwnerUser;
+import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.LGARepository;
-import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
-import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
-import com.sabi.datacollection.service.repositories.ProjectOwnerUserRepository;
+import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
+import com.sabi.framework.dto.requestDto.ForgetPasswordDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.PreviousPasswords;
 import com.sabi.framework.models.User;
 import com.sabi.framework.models.UserRole;
-import com.sabi.framework.notification.requestDto.NotificationRequestDto;
-import com.sabi.framework.notification.requestDto.RecipientRequest;
-import com.sabi.framework.notification.requestDto.SmsRequest;
-import com.sabi.framework.notification.requestDto.WhatsAppRequest;
+import com.sabi.framework.notification.requestDto.*;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
-import com.sabi.framework.service.AuditTrailService;
-import com.sabi.framework.service.NotificationService;
-import com.sabi.framework.service.TokenService;
-import com.sabi.framework.service.WhatsAppService;
+import com.sabi.framework.service.*;
 import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
@@ -51,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -76,10 +66,12 @@ public class ProjectOwnerService {
     private final ModelMapper mapper;
     private final Validations validations;
     private final UserRoleRepository userRoleRepository;
+    private final ProjectRepository projectRepository;
+    private final UserService userService;
 
     public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository,
                                AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
-                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository) {
+                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService) {
         this.projectOwnerUserRepository = projectOwnerUserRepository;
         this.organisationTypeRepository = organisationTypeRepository;
         this.lgaRepository = lgaRepository;
@@ -91,6 +83,8 @@ public class ProjectOwnerService {
         this.mapper = mapper;
         this.validations = validations;
         this.userRoleRepository = userRoleRepository;
+        this.projectRepository = projectRepository;
+        this.userService = userService;
     }
 
     public ProjectOwnerSignUpResponseDto projectOwnerSignUp(ProjectOwnerSignUpDto request, HttpServletRequest request1) {
@@ -197,7 +191,11 @@ public class ProjectOwnerService {
                 .phoneNumber(emailRecipient.getPhone())
                 .build();
         whatsAppService.whatsAppNotification(whatsAppRequest);
-
+        VoiceOtpRequest voiceOtpRequest = VoiceOtpRequest.builder()
+                .message("Activation Otp is " + " " + user.getResetToken())
+                .phoneNumber(emailRecipient.getPhone())
+                .build();
+        notificationService.voiceOtp(voiceOtpRequest);
         auditTrailService
                 .logEvent(response.getUsername(),
                         "SignUp Project Owner :" + response.getUsername(),
@@ -308,14 +306,7 @@ public class ProjectOwnerService {
         ProjectOwner projectOwner = projectOwnerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
-        LGA lga = lgaRepository.findById(projectOwner.getLgaId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested lga Id does not exist"));
-        OrganisationType organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested organisation type does not exist"));
-        projectOwner.setLga(lga.getName());
-        projectOwner.setOrganisationType(organisationType.getName());
+        setTransientFields(projectOwner);
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
     }
 
@@ -325,15 +316,7 @@ public class ProjectOwnerService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projectOwners.getContent().forEach(projectOwner -> {
-            if(projectOwner.getLgaId() != null ){
-                LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-                projectOwner.setLga(lga.getName());
-            }
-            if(projectOwner.getOrganisationTypeId() != null){
-                OrganisationType organisationType = organisationTypeRepository
-                        .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
-                projectOwner.setOrganisationType(organisationType.getName());
-            }
+            setTransientFields(projectOwner);
         });
         return projectOwners;
     }
@@ -359,19 +342,44 @@ public class ProjectOwnerService {
         List<ProjectOwner> projectOwners = projectOwnerRepository.findByIsActive(isActive);
 
         for ( ProjectOwner projectOwner: projectOwners){
-            LGA lga = lgaRepository.findLGAById(projectOwner.getLgaId());
-            OrganisationType organisationType = organisationTypeRepository
-                    .findOrganisationTypeById(projectOwner.getOrganisationTypeId());
-            if (lga == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "lga is null");
-            }
-            projectOwner.setLga(lga.getName());
-            if (organisationType == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
-            }
-            projectOwner.setOrganisationType(organisationType.getName());
+            setTransientFields(projectOwner);
+        }
+        return projectOwners;
+    }
+
+    public void changeUserPassword(ChangePasswordDto request) {
+        userService.changeUserPassword(request);
+    }
+
+    public Boolean getPrevPasswords(Long userId,String password){
+        return userService.getPrevPasswords(userId, password);
+    }
+
+    public void forgetPassword (ForgetPasswordDto request) {
+        userService.forgetPassword(request);
+    }
+
+    private void setTransientFields(ProjectOwner projectOwner){
+        if(projectOwner.getLgaId() != null) {
+            Optional<LGA> lga = lgaRepository.findById(projectOwner.getLgaId());
+            if(lga.isPresent())
+                projectOwner.setLga(lga.get().getName());
+        }
+        if(projectOwner.getOrganisationTypeId() != null){
+            Optional<OrganisationType> organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId());
+            if(organisationType.isPresent())
+                projectOwner.setOrganisationType(organisationType.get().getName());
+        }
+        if(projectOwner.getId() != null) {
+            List<Project> projects = projectRepository.findByProjectOwnerId(projectOwner.getId());
+            if(projects.size() > 0)
+            projectOwner.setProjectCount(projects.size());
+        }
+        if(projectOwner.getUserId() != null) {
+            Optional<User> user = userRepository.findById(projectOwner.getUserId());
+            if(user.isPresent())
+                projectOwner.setUserIsActive(user.get().getIsActive());
         }
 
-        return projectOwners;
     }
 }

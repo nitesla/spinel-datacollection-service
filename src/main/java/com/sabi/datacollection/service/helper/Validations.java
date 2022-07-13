@@ -9,7 +9,9 @@ import com.sabi.datacollection.core.models.LGA;
 import com.sabi.datacollection.core.models.ProjectOwner;
 import com.sabi.datacollection.core.models.State;
 import com.sabi.datacollection.service.repositories.*;
-import com.sabi.framework.dto.requestDto.*;
+import com.sabi.framework.dto.requestDto.ChangePasswordDto;
+import com.sabi.framework.dto.requestDto.CreateTransactionPinDto;
+import com.sabi.framework.dto.requestDto.GeneratePassword;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
@@ -23,6 +25,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 @SuppressWarnings("All")
@@ -41,8 +44,8 @@ public class Validations {
     private final SectorRepository sectorRepository;
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
-    private final DataRoleRepository dataRoleRepository;
-    private final DataPermissionRepository dataPermissionRepository;
+//    private final DataRoleRepository dataRoleRepository;
+//    private final DataPermissionRepository dataPermissionRepository;
     private final DataUserRepository dataUserRepository;
 
     //private final FormRepository formRepository;
@@ -75,7 +78,7 @@ public class Validations {
 //    private WalletRepository walletRepository;
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataRoleRepository dataRoleRepository, DataPermissionRepository dataPermissionRepository, DataUserRepository dataUserRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -86,8 +89,8 @@ public class Validations {
         this.sectorRepository = sectorRepository;
         this.indicatorDictionaryRepository = indicatorDictionaryRepository;
         this.dataSetRepository = dataSetRepository;
-        this.dataRoleRepository = dataRoleRepository;
-        this.dataPermissionRepository = dataPermissionRepository;
+//        this.dataRoleRepository = dataRoleRepository;
+//        this.dataPermissionRepository = dataPermissionRepository;
         this.dataUserRepository = dataUserRepository;
     }
 
@@ -191,6 +194,9 @@ public class Validations {
         LGA lga = lgaRepository.findById(enumeratorPropertiesDto.getLgaId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid LGA id!"));
+        organisationTypeRepository.findById(enumeratorPropertiesDto.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Organisation Type id!"));
         if (enumeratorPropertiesDto.getPhone() == null || enumeratorPropertiesDto.getPhone().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone cannot be empty");
         if (enumeratorPropertiesDto.getEmail() == null || enumeratorPropertiesDto.getEmail().isEmpty())
@@ -253,10 +259,6 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
         if (projectCategoryDto.getDescription() == null || projectCategoryDto.getDescription().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Description cannot be empty");
-
-        projectOwnerRepository.findById(projectCategoryDto.getProjectOwnerId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Project Owner id!"));
     }
 
     public void validateSector(SectorDto sectorDto) {
@@ -488,6 +490,9 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
         if (request.getDescription() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "description cannot be empty");
+        projectOwnerRepository.findById(request.getProjectOwnerId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Project Owner id!"));
     }
 
     public void validateTransaction(TransactionDto request) {
@@ -513,82 +518,6 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Bank code cannot be empty");
     }
 
-    public void validateRole(DataRoleDto roleDto) {
-        if (roleDto.getName() == null || roleDto.getName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (roleDto.getName().length() < 2 || roleDto.getName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid name  length");
-
-    }
-
-    public void validatePermission(DataPermissionDto permissionDto) {
-
-        if (permissionDto.getName() == null || permissionDto.getName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (permissionDto.getName().length() < 2 || permissionDto.getName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid name  length");
-
-        if (permissionDto.getAppPermission() == null || permissionDto.getAppPermission().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "App permission cannot be empty");
-    }
-
-
-    public void validateUser(UserDto userDto) {
-
-        if (userDto.getFirstName() == null || userDto.getFirstName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
-        if (!Utility.validateName(userDto.getFirstName()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for First Name ");
-        if (userDto.getFirstName().length() < 2 || userDto.getFirstName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
-
-        if (userDto.getLastName() == null || userDto.getLastName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
-        if (!Utility.validateName(userDto.getLastName()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for Last Name ");
-        if (userDto.getLastName().length() < 2 || userDto.getLastName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
-
-
-        if (userDto.getEmail() == null || userDto.getEmail().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
-        if (!Utility.validEmail(userDto.getEmail().trim()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
-        User user = userRepository.findByEmail(userDto.getEmail());
-        if(user !=null){
-            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Email already exist");
-        }
-
-        if (userDto.getPhone() == null || userDto.getPhone().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
-        if (userDto.getPhone().length() < 8 || userDto.getPhone().length() > 14)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
-        if (!Utility.isNumeric(userDto.getPhone()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
-        User userExist = dataUserRepository.findByPhone(userDto.getPhone());
-        if(userExist !=null){
-            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "  user phone already exist");
-        }
-        if(userDto.getRoleId()== null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Role id can not be null ");
-
-        dataRoleRepository.findById(userDto.getRoleId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Role"));
-
-    }
-
-    public void changeTransactionPin(ChangeTransactionPin changeTransactionPin) {
-        if (changeTransactionPin.getTransactionPin() == null || changeTransactionPin.getTransactionPin().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Transaction pin cannot be empty");
-
-        if (!Utility.isNumeric(changeTransactionPin.getTransactionPin()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Transaction pin must be numeric ");
-
-        if (changeTransactionPin.getTransactionPin().length() < 4 || changeTransactionPin.getTransactionPin().length() > 6)// LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid pin length");
-    }
-
     public void validateTransactionPin(CreateTransactionPinDto transactionPinDto) {
         if (transactionPinDto.getTransactionPin() == null || transactionPinDto.getTransactionPin().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Transaction pin cannot be empty");
@@ -599,41 +528,6 @@ public class Validations {
         if (transactionPinDto.getTransactionPin().length() < 4 || transactionPinDto.getTransactionPin().length() > 6)// LENGTH*********
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid pin length");
     }
-
-
-    public void updateUser(UserDto userDto) {
-
-
-        if (userDto.getFirstName() == null || userDto.getFirstName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
-        if (userDto.getFirstName().length() < 2 || userDto.getFirstName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
-        if(userDto.getRoleId()== null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Role id cannot be empty");
-
-        dataRoleRepository.findById(userDto.getRoleId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Role"));
-
-        if (userDto.getLastName() == null || userDto.getLastName().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
-        if (userDto.getLastName().length() < 2 || userDto.getLastName().length() > 100)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
-
-        if (userDto.getEmail() == null || userDto.getEmail().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
-        if (!Utility.validEmail(userDto.getEmail().trim()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
-
-        if (userDto.getPhone() == null || userDto.getPhone().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
-        if (userDto.getPhone().length() < 8 || userDto.getPhone().length() > 14)// NAME LENGTH*********
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
-        if (!Utility.isNumeric(userDto.getPhone()))
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
-
-    }
-
 
 
     public void changePassword(ChangePasswordDto changePasswordDto) {
@@ -647,12 +541,17 @@ public class Validations {
 
     }
 
-
     public void generatePasswordValidation(GeneratePassword request) {
 
         if (request.getPhone() == null || request.getPhone().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone cannot be empty");
 
+    }
+
+    public void validateProjectStatus(String status) {
+        if(!Arrays.stream(Status.values()).anyMatch((t) -> t.name().equals(status))){
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid value for status!");
+        }
     }
 
 }

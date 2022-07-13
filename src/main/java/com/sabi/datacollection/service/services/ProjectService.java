@@ -13,15 +13,20 @@ import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
+import com.sabi.framework.models.AuditTrail;
 import com.sabi.framework.models.User;
+import com.sabi.framework.service.AuditTrailService;
 import com.sabi.framework.service.TokenService;
+import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
+import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,18 +39,20 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectOwnerRepository projectOwnerRepository;
     private final ProjectCategoryRepository projectCategoryRepository;
+    private final AuditTrailService auditTrailService;
     private final ModelMapper mapper;
     private final Validations validations;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, ModelMapper mapper, Validations validations) {
+    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations) {
         this.projectRepository = projectRepository;
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
+        this.auditTrailService = auditTrailService;
         this.mapper = mapper;
         this.validations = validations;
     }
 
-    public ProjectResponseDto createProject(ProjectDto request) {
+    public ProjectResponseDto createProject(ProjectDto request,  HttpServletRequest request1) {
         validations.validateProject(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Project projectExists = projectRepository.findByName(request.getName());
@@ -71,6 +78,13 @@ public class ProjectService {
 
         projectRepository.save(project);
         log.info("Created new Project  - {}", project);
+        auditTrailService
+                .logEvent(userCurrent.getUsername(),
+                        userCurrent.getUsername() + " created " + project.getName(),
+                AuditTrailFlag.SIGNUP,
+                "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
+
+
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -87,11 +101,11 @@ public class ProjectService {
         return mapper.map(project, ProjectResponseDto.class);
     }
 
-    public ProjectResponseDto findProjectById(Long id){
+    public ProjectResponseDto findProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Id does not exist!"));
-        setProjectOwnerAndProjectCategory(project);
+        setTransientFields(project);
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -101,7 +115,32 @@ public class ProjectService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projects.forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
+            project.setProjectCount(projects.size());
+        });
+        return projects;
+    }
+
+    public List<Project> findProjectByStatusAndCategory(String status, Long categoryId) {
+        validations.validateProjectStatus(status);
+        List<Project> projects = projectRepository.findByStatusAndProjectCategoryId(Status.valueOf(status), categoryId);
+        if (projects == null) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+        }
+        projects.forEach(project -> {
+            setTransientFields(project);
+        });
+        return projects;
+    }
+
+    public List<Project> findProjectByCategory(Long categoryId) {
+        List<Project> projects = projectRepository.findByProjectCategoryId(categoryId);
+        if (projects == null) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+        }
+        projects.forEach(project -> {
+            setTransientFields(project);
+            project.setProjectCount(projects.size());
         });
         return projects;
     }
@@ -112,7 +151,7 @@ public class ProjectService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         projects.getContent().forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
         });
         return projects;
 
@@ -132,22 +171,35 @@ public class ProjectService {
     public List<Project> getAll(Boolean isActive){
         List<Project> projects = projectRepository.findByIsActive(isActive);
         projects.forEach(project -> {
-            setProjectOwnerAndProjectCategory(project);
+            setTransientFields(project);
         });
         return projects;
     }
 
-    private void setProjectOwnerAndProjectCategory(Project project) {
-        ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId())
-            .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                    "Requested Project Owner Id does not exist"));
-        if(projectOwner.getLastname() != null && projectOwner.getLastname() != null){
-            String projectOwnerName = projectOwner.getFirstname() + " " + projectOwner.getLastname();
-            project.setProjectOwner(projectOwnerName);
+    public List<Project> findProjectByProjectOwner(Long projectOwnerId) {
+        return projectRepository.findByProjectOwnerId(projectOwnerId);
+    }
+
+    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, PageRequest pageRequest) {
+        String event = username + " created " + projectName;
+        return auditTrailService.findAll(username, event, String.valueOf(AuditTrailFlag.CREATE), null, null, pageRequest);
+    }
+
+    private void setTransientFields(Project project) {
+        if(project.getProjectOwnerId() != null) {
+            ProjectOwner projectOwner = projectOwnerRepository.findById(project.getProjectOwnerId()).get();
+            if(projectOwner.getFirstname() != null && projectOwner.getLastname() != null) {
+                project.setProjectOwner(projectOwner.getFirstname() + " " + projectOwner.getLastname());
+            }
+            if(projectOwner != null) {
+                project.setClientType(projectOwnerRepository.findById(projectOwner.getId()).get().getIsCorp() ? "Corporate" : "Individual");
+            }
         }
-        ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested Project Category Id does not exist"));
-        project.setProjectCategory(projectCategory.getName());
+
+        if (project.getProjectCategoryId() != null) {
+            ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId()).get();
+            project.setProjectCategory(projectCategory.getName());
+            project.setProjectCategoryDescription(projectCategory.getDescription());
+        }
     }
 }
