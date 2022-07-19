@@ -181,6 +181,14 @@ public class ProjectEnumeratorService {
         return projectEnumerators;
     }
 
+    public List<ProjectEnumerator> getEnumeratorProject(Long enumeratorId){
+        List<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findByEnumeratorId(enumeratorId);
+        for (ProjectEnumerator projectEnumerator: projectEnumerators) {
+            setTransientField(projectEnumerator);
+        }
+        return projectEnumerators;
+    }
+
     /**
      <summary>
      Enables/Disables project enumerator
