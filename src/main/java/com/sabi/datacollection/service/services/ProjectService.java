@@ -88,7 +88,7 @@ public class ProjectService {
         return mapper.map(project, ProjectResponseDto.class);
     }
 
-    public ProjectResponseDto updateProject(ProjectDto request) {
+    public ProjectResponseDto updateProject(ProjectDto request, HttpServletRequest request1) {
         validations.validateProject(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Project project = projectRepository.findById(request.getId())
@@ -98,14 +98,25 @@ public class ProjectService {
         project.setUpdatedBy(userCurrent.getId());
         projectRepository.save(project);
         log.info("Project record updated - {}", project);
+        auditTrailService
+                .logEvent(userCurrent.getUsername(),
+                        userCurrent.getUsername() + " updated " + project.getName(),
+                        AuditTrailFlag.UPDATE,
+                        "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
         return mapper.map(project, ProjectResponseDto.class);
     }
 
-    public ProjectResponseDto findProjectById(Long id) {
+    public ProjectResponseDto findProjectById(Long id, HttpServletRequest request1) {
+        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Id does not exist!"));
         setTransientFields(project);
+        auditTrailService
+                .logEvent(userCurrent.getUsername(),
+                        userCurrent.getUsername() + " viewed " + project.getName(),
+                        AuditTrailFlag.VIEW,
+                        "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -180,9 +191,9 @@ public class ProjectService {
         return projectRepository.findByProjectOwnerId(projectOwnerId);
     }
 
-    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, PageRequest pageRequest) {
+    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, AuditTrailFlag auditTrailFlag, PageRequest pageRequest) {
         String event = username + " created " + projectName;
-        return auditTrailService.findAll(username, event, String.valueOf(AuditTrailFlag.CREATE), null, null, pageRequest);
+        return auditTrailService.findAll(username, event, String.valueOf(auditTrailFlag), null, null, pageRequest);
     }
 
     private void setTransientFields(Project project) {

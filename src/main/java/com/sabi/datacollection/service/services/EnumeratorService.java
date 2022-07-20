@@ -13,15 +13,13 @@ import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.EnumeratorRepository;
-import com.sabi.datacollection.service.repositories.LGARepository;
-import com.sabi.datacollection.service.repositories.OrganisationTypeRepository;
-import com.sabi.datacollection.service.repositories.StateRepository;
+import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.PreviousPasswords;
+import com.sabi.framework.models.Role;
 import com.sabi.framework.models.User;
 import com.sabi.framework.models.UserRole;
 import com.sabi.framework.notification.requestDto.NotificationRequestDto;
@@ -29,6 +27,7 @@ import com.sabi.framework.notification.requestDto.RecipientRequest;
 import com.sabi.framework.notification.requestDto.SmsRequest;
 import com.sabi.framework.notification.requestDto.WhatsAppRequest;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
+import com.sabi.framework.repositories.RoleRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
 import com.sabi.framework.service.AuditTrailService;
@@ -52,6 +51,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 
 @SuppressWarnings("ALL")
@@ -80,13 +80,15 @@ public class EnumeratorService {
     private final StateRepository stateRepository;
     private final UserRoleRepository userRoleRepository;
     private final ProjectEnumeratorService projectEnumeratorService;
+    private final CountryRepository countryRepository;
+    private final RoleRepository roleRepository;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
                              PreviousPasswordRepository previousPasswordRepository, ModelMapper mapper,
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
-                             StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService) {
+                             StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService, CountryRepository countryRepository, RoleRepository roleRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -99,6 +101,8 @@ public class EnumeratorService {
         this.stateRepository = stateRepository;
         this.userRoleRepository = userRoleRepository;
         this.projectEnumeratorService = projectEnumeratorService;
+        this.countryRepository = countryRepository;
+        this.roleRepository = roleRepository;
     }
 
 
@@ -215,7 +219,7 @@ public class EnumeratorService {
 
 
 
-    public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request) {
+    public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request, HttpServletRequest request1) {
         validations.validateEnumeratorProperties(request);
         Enumerator enumerator = repository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -228,12 +232,6 @@ public class EnumeratorService {
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
         User user = userRepository.getOne(enumerator.getUserId());
-        user.setIsActive(true);
-        user.setUpdatedBy(enumerator.getUserId());
-        user.setPasswordChangedOn(LocalDateTime.now());
-        userRepository.save(user);
-
-
 
         CompleteSignUpResponse response = CompleteSignUpResponse.builder()
                 .enumeratorId(enumerator.getId())
@@ -249,12 +247,17 @@ public class EnumeratorService {
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
                 .build();
+
+        auditTrailService
+                .logEvent(response.getUserEmail(),
+                        "SignUp Enumerator :" + response.getUserEmail(),
+                        AuditTrailFlag.SIGNUP,
+                        " Sign up Enumerator Request for:" + user.getFirstName() + " " + user.getLastName() + " " + user.getEmail()
+                        , 1, Utility.getClientIp(request1));
+
         return response;
 
     }
-
-
-
 
     public EnumeratorActivationResponse enumeratorPasswordActivation(ChangePasswordDto request) {
 
@@ -325,18 +328,13 @@ public class EnumeratorService {
         Enumerator enumeratorProperties  = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested enumerator properties Id does not exist!"));
-        LGA lga = lgaRepository.findLGAById(enumeratorProperties.getLgaId());
-
-        State state = stateRepository.getOne(lga.getStateId());
-
-        OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(enumeratorProperties.getOrganisationTypeId());
-
-
-        enumeratorProperties.setOrganisationType(organisationType.getName());
-        enumeratorProperties.setLga(lga.getName());
-        enumeratorProperties.setState(state.getName());
-
-        return mapper.map(enumeratorProperties,EnumeratorResponseDto.class);
+        Enumerator enumerator = setTransientFields(enumeratorProperties);
+        EnumeratorResponseDto enumeratorResponseDto = mapper.map(enumerator, EnumeratorResponseDto.class);
+        if(Objects.nonNull(enumerator.getUserId()) && enumerator.getUserId() != 0) {
+            Role role = roleRepository.findById(userRoleRepository.findByUserId(enumerator.getUserId()).getId()).get();
+            enumeratorResponseDto.setRole(role.getName());
+        }
+        return enumeratorResponseDto;
     }
 
 
@@ -346,12 +344,7 @@ public class EnumeratorService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
         enumeratorProperties.getContent().forEach(enumerator ->{
-            LGA lga = lgaRepository.findLGAById(enumerator.getLgaId());
-            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(enumerator.getOrganisationTypeId());
-
-
-            enumerator.setOrganisationType(organisationType.getName());
-            enumerator.setLga(lga.getName());
+            setTransientFields(enumerator);
         });
         return enumeratorProperties;
 
@@ -381,20 +374,7 @@ public class EnumeratorService {
         List<Enumerator> enumeratorProperties = repository.findByIsActive(isActive);
         for (Enumerator part : enumeratorProperties
         ) {
-            LGA lga = lgaRepository.findLGAById(part.getLgaId());
-            OrganisationType organisationType = organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId());
-
-
-            if (organisationType == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Organisation type is null");
-            }
-            part.setOrganisationType(organisationType.getName());
-
-            if (lga == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "LGA type is null");
-            }
-            part.setLga(lga.getName());
-
+           setTransientFields(part);
         }
         return enumeratorProperties;
 
@@ -404,21 +384,51 @@ public class EnumeratorService {
         Page<Enumerator> enumeratorPropertyPage = repository.findByIsActive(isActive, pageable);
         for (Enumerator part : enumeratorPropertyPage.getContent()
         ) {
-            if(part.getLgaId() != null)
-                part.setLga( lgaRepository.findLGAById(part.getLgaId()).getName());
-
-            if(part.getOrganisationTypeId() != null)
-                part.setOrganisationType(organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId()).getName());
+            setTransientFields(part);
         }
         return enumeratorPropertyPage;
     }
 
-    public HashMap<String, String> enumeratorSummary(long enumeratorId) {
+    public HashMap<String, Integer> enumeratorSummary(long enumeratorId) {
         int activeProjects = projectEnumeratorService.getEnumeratorProject(enumeratorId).size();
+        int submittedSurveys = 0;
+        int assignedTasks = 0;
+        int pendindTasks = 0;
+        int taskInProgress = 0;
+        int inCompleteSurveys = 0;
+        int activeLocations = 0;
+        int amountEarned = 0;
 
-        return new HashMap<String,String>(){{
-            put("activeProjects", String.valueOf(activeProjects));
+        return new HashMap<String, Integer>(){{
+            put("activeProjects", activeProjects);
+            put("submittedSurveys", submittedSurveys);
+            put("assignedTasks", assignedTasks);
+            put("pendindTasks", pendindTasks);
+            put("taskInProgress", taskInProgress);
+            put("inCompleteSurveys", inCompleteSurveys);
+            put("activeLocations", activeLocations);
+            put("amountEarned", amountEarned);
         }};
 
+    }
+
+    private Enumerator setTransientFields(Enumerator enumeratorProperties) {
+
+        if(Objects.nonNull(enumeratorProperties.getOrganisationTypeId()))
+            enumeratorProperties.setOrganisationType(organisationTypeRepository.findOrganisationTypeById(enumeratorProperties.getOrganisationTypeId()).getName());
+
+        LGA lga = null;
+        if(Objects.nonNull(enumeratorProperties.getLgaId())) {
+            lga = lgaRepository.findLGAById(enumeratorProperties.getLgaId());
+            enumeratorProperties.setLga(lga.getName());
+        }
+
+        if(Objects.nonNull(lga.getStateId()))
+            enumeratorProperties.setState(stateRepository.getOne(lga.getStateId()).getName());
+
+        if(Objects.nonNull(enumeratorProperties.getCountryId()))
+            enumeratorProperties.setCountry(countryRepository.getOne(enumeratorProperties.getCountryId()).getName());
+
+        return enumeratorProperties;
     }
 }
