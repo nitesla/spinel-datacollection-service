@@ -172,6 +172,9 @@ public class Validations {
     }
 
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
+        if (enumeratorPropertiesDto.getIsCorp() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is Corp cannot be empty");
+        
         if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 

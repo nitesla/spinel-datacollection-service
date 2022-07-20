@@ -3,6 +3,7 @@ package com.sabi.datacollection.service.services;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectDto;
 import com.sabi.datacollection.core.dto.response.ProjectResponseDto;
+import com.sabi.datacollection.core.enums.Gender;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Project;
 import com.sabi.datacollection.core.models.ProjectCategory;
@@ -11,6 +12,7 @@ import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.ProjectCategoryRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
+import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.AuditTrail;
@@ -21,6 +23,7 @@ import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -191,8 +194,10 @@ public class ProjectService {
         return projectRepository.findByProjectOwnerId(projectOwnerId);
     }
 
-    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, AuditTrailFlag auditTrailFlag, PageRequest pageRequest) {
+    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, String auditTrailFlag, PageRequest pageRequest) {
         String event = username + " created " + projectName;
+        if (!EnumUtils.isValidEnum(AuditTrailFlag.class, auditTrailFlag.toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for audittrail flag");
         return auditTrailService.findAll(username, event, String.valueOf(auditTrailFlag), null, null, pageRequest);
     }
 
