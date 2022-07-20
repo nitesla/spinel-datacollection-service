@@ -490,9 +490,9 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
         if (request.getDescription() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "description cannot be empty");
-        projectOwnerRepository.findById(request.getProjectOwnerId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Project Owner id!"));
+//        projectOwnerRepository.findById(request.getProjectOwnerId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Project Owner id!"));
     }
 
     public void validateTransaction(TransactionDto request) {
