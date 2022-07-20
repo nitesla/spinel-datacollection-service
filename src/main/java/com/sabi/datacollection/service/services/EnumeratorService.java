@@ -11,10 +11,7 @@ import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.enums.UserCategory;
-import com.sabi.datacollection.core.models.Enumerator;
-import com.sabi.datacollection.core.models.LGA;
-import com.sabi.datacollection.core.models.OrganisationType;
-import com.sabi.datacollection.core.models.State;
+import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.LGARepository;
@@ -53,6 +50,7 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -81,13 +79,14 @@ public class EnumeratorService {
     private final AuditTrailService auditTrailService;
     private final StateRepository stateRepository;
     private final UserRoleRepository userRoleRepository;
+    private final ProjectEnumeratorService projectEnumeratorService;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
                              PreviousPasswordRepository previousPasswordRepository, ModelMapper mapper,
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
-                             StateRepository stateRepository, UserRoleRepository userRoleRepository) {
+                             StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -99,6 +98,7 @@ public class EnumeratorService {
         this.auditTrailService = auditTrailService;
         this.stateRepository = stateRepository;
         this.userRoleRepository = userRoleRepository;
+        this.projectEnumeratorService = projectEnumeratorService;
     }
 
 
@@ -411,5 +411,14 @@ public class EnumeratorService {
                 part.setOrganisationType(organisationTypeRepository.findOrganisationTypeById(part.getOrganisationTypeId()).getName());
         }
         return enumeratorPropertyPage;
+    }
+
+    public HashMap<String, String> enumeratorSummary(long enumeratorId) {
+        int activeProjects = projectEnumeratorService.getEnumeratorProject(enumeratorId).size();
+
+        return new HashMap<String,String>(){{
+            put("activeProjects", String.valueOf(activeProjects));
+        }};
+
     }
 }
