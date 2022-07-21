@@ -174,7 +174,7 @@ public class Validations {
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
         if (enumeratorPropertiesDto.getIsCorp() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is Corp cannot be empty");
-        
+
         if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
@@ -197,6 +197,14 @@ public class Validations {
     public void validateEnumeratorUpdate(EnumeratorDto enumeratorPropertiesDto) {
         if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getFirstName() == null || enumeratorPropertiesDto.getFirstName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getFirstName().length() < 2 || enumeratorPropertiesDto.getFirstName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getLastName() == null || enumeratorPropertiesDto.getLastName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getLastName().length() < 2 || enumeratorPropertiesDto.getLastName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
 
         if (enumeratorPropertiesDto.getAddress() == null || enumeratorPropertiesDto.getAddress().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Address cannot be empty");

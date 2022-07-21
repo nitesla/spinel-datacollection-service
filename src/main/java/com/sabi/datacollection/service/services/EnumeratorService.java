@@ -218,7 +218,6 @@ public class EnumeratorService {
     }
 
 
-
     public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request, HttpServletRequest request1) {
         validations.validateEnumeratorProperties(request);
         Enumerator enumerator = repository.findById(request.getId())

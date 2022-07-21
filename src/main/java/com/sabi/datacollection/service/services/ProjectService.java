@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -82,7 +83,7 @@ public class ProjectService {
         projectRepository.save(project);
         log.info("Created new Project  - {}", project);
         auditTrailService
-                .logEvent(userCurrent.getUsername(),
+                .logEvent(project.getName(),
                         userCurrent.getUsername() + " created " + project.getName(),
                 AuditTrailFlag.SIGNUP,
                 "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
@@ -102,10 +103,10 @@ public class ProjectService {
         projectRepository.save(project);
         log.info("Project record updated - {}", project);
         auditTrailService
-                .logEvent(userCurrent.getUsername(),
+                .logEvent(project.getName(),
                         userCurrent.getUsername() + " updated " + project.getName(),
                         AuditTrailFlag.UPDATE,
-                        "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
+                        "Update Project :" + project.getName(), 1, Utility.getClientIp(request1));
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -116,10 +117,10 @@ public class ProjectService {
                         "Requested Project Id does not exist!"));
         setTransientFields(project);
         auditTrailService
-                .logEvent(userCurrent.getUsername(),
+                .logEvent(project.getName(),
                         userCurrent.getUsername() + " viewed " + project.getName(),
                         AuditTrailFlag.VIEW,
-                        "Create Project :" + project.getName(), 1, Utility.getClientIp(request1));
+                        "View Project :" + project.getName(), 1, Utility.getClientIp(request1));
         return mapper.map(project, ProjectResponseDto.class);
     }
 
@@ -194,11 +195,14 @@ public class ProjectService {
         return projectRepository.findByProjectOwnerId(projectOwnerId);
     }
 
-    public Page<AuditTrail> getProjectAuditTrail(String username, String projectName, String auditTrailFlag, PageRequest pageRequest) {
-        String event = username + " created " + projectName;
-        if (!EnumUtils.isValidEnum(AuditTrailFlag.class, auditTrailFlag.toUpperCase()))
+    public Page<AuditTrail> getProjectAuditTrail(String projectName, String auditTrailFlag, PageRequest pageRequest) {
+        String flag = null;
+        if (Objects.nonNull(auditTrailFlag) && !EnumUtils.isValidEnum(AuditTrailFlag.class, auditTrailFlag.toUpperCase())) {
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for audittrail flag");
-        return auditTrailService.findAll(username, event, String.valueOf(auditTrailFlag), null, null, pageRequest);
+        }else {
+            flag = auditTrailFlag;
+        }
+        return auditTrailService.findAll(projectName, null, flag, null, null, pageRequest);
     }
 
     private void setTransientFields(Project project) {
