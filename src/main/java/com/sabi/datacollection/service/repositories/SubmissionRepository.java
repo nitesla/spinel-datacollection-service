@@ -23,6 +23,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findByIsActive(Boolean isActive);
 
+    List<Submission> findAll();
+
 
     @Query("SELECT s FROM Submission s WHERE ((:projectId IS NULL) OR (:projectId IS NOT NULL AND s.projectId = :projectId))" +
             " AND ((:formId IS NULL) OR (:formId IS NOT NULL AND s.formId = :formId))" +
