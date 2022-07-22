@@ -212,7 +212,7 @@ public class ProjectService {
                 project.setProjectOwner(projectOwner.getFirstname() + " " + projectOwner.getLastname());
             }
             if(projectOwner != null) {
-                project.setClientType(projectOwnerRepository.findById(projectOwner.getId()).get().getIsCorp() ? "Corporate" : "Individual");
+                project.setClientType(projectOwner.getIsCorp() ? "Corporate" : "Individual");
             }
         }
 
