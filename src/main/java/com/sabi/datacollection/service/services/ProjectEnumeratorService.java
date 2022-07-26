@@ -157,8 +157,8 @@ public class ProjectEnumeratorService {
       </summary>
       <remarks>This method searches for all project enumerators and returns pagination</remarks>
      */
-    public Page<ProjectEnumerator> searchAll(Long projectId, Long enumeratorId, PageRequest pageRequest){
-        Page<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findProjectEnumerators(projectId,enumeratorId,pageRequest);
+    public Page<ProjectEnumerator> searchAll(Long projectId, Long enumeratorId, String name, PageRequest pageRequest){
+        Page<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findProjectEnumerators(projectId,enumeratorId,name,pageRequest);
         if (projectEnumerators ==null)
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"No records found");
         for (ProjectEnumerator projectEnumerator: projectEnumerators) {
