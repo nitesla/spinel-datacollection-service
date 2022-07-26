@@ -18,6 +18,9 @@ public interface ProjectOwnerRepository extends JpaRepository<ProjectOwner, Long
     ProjectOwner findProjectOwnerByPhone(String phone);
 
     List<ProjectOwner> findByIsActive(Boolean isActive);
+    Integer countAllByIsActive(Boolean isActive);
+
+    Integer countAllByIsActive(boolean isActive);
 
     @Query("SELECT p FROM ProjectOwner p WHERE ((:firstname IS NULL) OR (:firstname IS NOT NULL AND p.firstname like %:firstname%))" +
             " AND ((:lastname IS NULL) OR (:lastname IS NOT NULL AND p.lastname like  %:lastname%)) " +
@@ -26,4 +29,5 @@ public interface ProjectOwnerRepository extends JpaRepository<ProjectOwner, Long
                                          @Param("lastname") String lastname,
                                          @Param("email") String email,
                                          Pageable pageable);
+    List<ProjectOwner> findAll();
 }

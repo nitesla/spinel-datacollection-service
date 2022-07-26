@@ -28,4 +28,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p FROM Project p WHERE ((:name IS NULL) OR (:name IS NOT NULL AND p.name like %:name%)) order by p.id desc")
     Page<Project> findProjects(@Param("name") String name,
                                                 Pageable pageable);
+
+    List<Project> findAll();
 }
