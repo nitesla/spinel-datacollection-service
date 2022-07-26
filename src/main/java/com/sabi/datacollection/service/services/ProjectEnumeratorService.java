@@ -10,6 +10,7 @@ import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.ProjectEnumeratorRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
+import com.sabi.datacollection.service.repositories.ProjectRoleRepository;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
@@ -22,8 +23,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -36,15 +39,17 @@ public class ProjectEnumeratorService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final Validations validations;
+    private final ProjectRoleRepository projectRoleRepository;
 
 
-    public ProjectEnumeratorService(ProjectEnumeratorRepository projectEnumeratorRepository, ProjectRepository projectRepository, EnumeratorRepository enumeratorRepository, UserRepository userRepository, ModelMapper modelMapper, Validations validations) {
+    public ProjectEnumeratorService(ProjectEnumeratorRepository projectEnumeratorRepository, ProjectRepository projectRepository, EnumeratorRepository enumeratorRepository, UserRepository userRepository, ModelMapper modelMapper, Validations validations, ProjectRoleRepository projectRoleRepository) {
         this.projectEnumeratorRepository = projectEnumeratorRepository;
         this.projectRepository = projectRepository;
         this.enumeratorRepository = enumeratorRepository;
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
         this.validations = validations;
+        this.projectRoleRepository = projectRoleRepository;
     }
 
     /**
@@ -189,6 +194,14 @@ public class ProjectEnumeratorService {
         return projectEnumerators;
     }
 
+    public List<ProjectEnumerator> getEnumeratorProjectWithDate(Long enumeratorId, LocalDateTime start, LocalDateTime end){
+        List<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findByEnumeratorIdAndCreatedDateBetween(enumeratorId, start, end);
+        for (ProjectEnumerator projectEnumerator: projectEnumerators) {
+            setTransientField(projectEnumerator);
+        }
+        return projectEnumerators;
+    }
+
     /**
      <summary>
      Enables/Disables project enumerator
@@ -205,27 +218,22 @@ public class ProjectEnumeratorService {
     }
 
     private void setTransientField(ProjectEnumerator projectEnumerator){
-        if(projectEnumerator.getProjectId() != null) {
+        if(Objects.nonNull(projectEnumerator.getProjectId())) {
             Optional<Project> project = projectRepository.findById(projectEnumerator.getProjectId());
             project.ifPresent(value -> projectEnumerator.setDescription(value.getDescription()));
 
         }
-        Optional<User> user;
-        if(projectEnumerator.getEnumeratorId() != null) {
+        if(Objects.nonNull(projectEnumerator.getEnumeratorId())) {
             Optional<Enumerator> enumerator = enumeratorRepository.findById(projectEnumerator.getEnumeratorId());
             if(enumerator.isPresent()) {
-                user = userRepository.findById(enumerator.get().getUserId());
                 projectEnumerator.setPhoneNumber(enumerator.get().getPhone());
                 projectEnumerator.setLocation(enumerator.get().getAddress());
                 projectEnumerator.setEmail(enumerator.get().getEmail());
                 projectEnumerator.setRating(String.valueOf(enumerator.get().getRating()));
                 projectEnumerator.setEfficiency(enumerator.get().getEfficiency());
                 projectEnumerator.setPicture(enumerator.get().getPictureUrl());
-                if(user.isPresent()){
-                    projectEnumerator.setFirstName(user.get().getFirstName());
-                    projectEnumerator.setLastName(user.get().getLastName());
-                    projectEnumerator.setRole(user.get().getRoleName());
-                }
+                projectEnumerator.setFirstName(enumerator.get().getFirstName());
+                projectEnumerator.setLastName(enumerator.get().getLastName());
             }
         }
 

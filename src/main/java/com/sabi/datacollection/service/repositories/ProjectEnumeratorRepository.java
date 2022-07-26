@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -14,6 +15,7 @@ public interface ProjectEnumeratorRepository extends JpaRepository<ProjectEnumer
     ProjectEnumerator findByProjectIdAndEnumeratorId(Long projectId, Long enumeratorId);
     List<ProjectEnumerator> findByProjectId(Long projectId);
     List<ProjectEnumerator> findByEnumeratorId(Long enumeratorId);
+    List<ProjectEnumerator> findByEnumeratorIdAndCreatedDateBetween(Long enumeratorId, LocalDateTime start, LocalDateTime end);
 
     List<ProjectEnumerator> findAllByIsActive(boolean isActive);
 

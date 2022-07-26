@@ -12,6 +12,7 @@ import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
+import com.sabi.datacollection.service.helper.DateFormatter;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
@@ -313,6 +314,9 @@ public class EnumeratorService {
         mapper.map(request, enumeratorProperties);
         enumeratorProperties.setUpdatedBy(userCurrent.getId());
         repository.save(enumeratorProperties);
+        userCurrent.setFirstName(request.getFirstName());
+        userCurrent.setLastName(request.getLastName());
+        userRepository.save(userCurrent);
         log.debug("enumerator asset record updated - {}"+ new Gson().toJson(enumeratorProperties));
         auditTrailService
                 .logEvent(userCurrent.getUsername(),
@@ -409,6 +413,31 @@ public class EnumeratorService {
             put("amountEarned", amountEarned);
         }};
 
+    }
+
+    public HashMap<String, Integer> enumeratorSummary(long enumeratorId, String startDate, String endDate) {
+        LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
+        LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
+
+        int activeProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end).size();
+        int submittedSurveys = 0;
+        int assignedTasks = 0;
+        int pendindTasks = 0;
+        int taskInProgress = 0;
+        int inCompleteSurveys = 0;
+        int activeLocations = 0;
+        int amountEarned = 0;
+
+        return new HashMap<String, Integer>() {{
+            put("activeProjects", activeProjects);
+            put("submittedSurveys", submittedSurveys);
+            put("assignedTasks", assignedTasks);
+            put("pendindTasks", pendindTasks);
+            put("taskInProgress", taskInProgress);
+            put("inCompleteSurveys", inCompleteSurveys);
+            put("activeLocations", activeLocations);
+            put("amountEarned", amountEarned);
+        }};
     }
 
     private Enumerator setTransientFields(Enumerator enumeratorProperties) {
