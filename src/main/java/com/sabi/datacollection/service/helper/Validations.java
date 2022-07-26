@@ -2,6 +2,7 @@ package com.sabi.datacollection.service.helper;
 
 
 import com.sabi.datacollection.core.dto.request.*;
+import com.sabi.datacollection.core.enums.Gender;
 import com.sabi.datacollection.core.enums.Location;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.Country;
@@ -211,6 +212,9 @@ public class Validations {
     }
 
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
+        if (enumeratorPropertiesDto.getIsCorp() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is Corp cannot be empty");
+
         if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
@@ -223,11 +227,24 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone cannot be empty");
         if (enumeratorPropertiesDto.getEmail() == null || enumeratorPropertiesDto.getEmail().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
+        if (!EnumUtils.isValidEnum(Gender.class, enumeratorPropertiesDto.getGender().toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for gender: MALE/FEMALE/OTHERS");
+        countryRepository.findById(enumeratorPropertiesDto.getCountryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Country id!"));
     }
 
     public void validateEnumeratorUpdate(EnumeratorDto enumeratorPropertiesDto) {
         if (enumeratorPropertiesDto.getIsCorp() == true && (enumeratorPropertiesDto.getCorporateName() == null || enumeratorPropertiesDto.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getFirstName() == null || enumeratorPropertiesDto.getFirstName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getFirstName().length() < 2 || enumeratorPropertiesDto.getFirstName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getLastName() == null || enumeratorPropertiesDto.getLastName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (enumeratorPropertiesDto.getIsCorp() == false && (enumeratorPropertiesDto.getLastName().length() < 2 || enumeratorPropertiesDto.getLastName().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
 
         if (enumeratorPropertiesDto.getAddress() == null || enumeratorPropertiesDto.getAddress().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Address cannot be empty");

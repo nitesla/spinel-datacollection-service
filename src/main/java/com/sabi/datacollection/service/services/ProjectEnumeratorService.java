@@ -218,9 +218,13 @@ public class ProjectEnumeratorService {
                 projectEnumerator.setPhoneNumber(enumerator.get().getPhone());
                 projectEnumerator.setLocation(enumerator.get().getAddress());
                 projectEnumerator.setEmail(enumerator.get().getEmail());
+                projectEnumerator.setRating(String.valueOf(enumerator.get().getRating()));
+                projectEnumerator.setEfficiency(enumerator.get().getEfficiency());
+                projectEnumerator.setPicture(enumerator.get().getPictureUrl());
                 if(user.isPresent()){
                     projectEnumerator.setFirstName(user.get().getFirstName());
                     projectEnumerator.setLastName(user.get().getLastName());
+                    projectEnumerator.setRole(user.get().getRoleName());
                 }
             }
         }
