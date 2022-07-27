@@ -2,6 +2,7 @@ package com.sabi.datacollection.service.repositories;
 
 
 
+import com.sabi.datacollection.core.enums.EnumeratorStatus;
 import com.sabi.datacollection.core.models.Enumerator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,8 @@ public interface EnumeratorRepository extends JpaRepository<Enumerator, Long> {
     Page<Enumerator> findByIsActive(Boolean isActive, Pageable pageable);
 
     Integer countAllByIsActive(Boolean isActive);
+
+    Integer countAllByStatus(EnumeratorStatus status);
 
 
     @Query("SELECT p FROM Enumerator p WHERE ((:corporateName IS NULL) OR (:corporateName IS NOT NULL AND p.corporateName like %:corporateName%)) order by p.id desc")

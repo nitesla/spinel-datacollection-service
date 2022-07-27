@@ -1,6 +1,7 @@
 package com.sabi.datacollection.service.services;
 
 import com.sabi.datacollection.core.dto.response.*;
+import com.sabi.datacollection.core.enums.EnumeratorStatus;
 import com.sabi.datacollection.service.repositories.EnumeratorRepository;
 import com.sabi.datacollection.service.repositories.ProjectOwnerRepository;
 import com.sabi.datacollection.service.repositories.ProjectRepository;
@@ -82,6 +83,15 @@ public class BackOfficeDashboardService {
 
     public RoleDashboardResponseDto populateRoleBackOfficeInfo() {
         RoleDashboardResponseDto responseDto = new RoleDashboardResponseDto();
+        responseDto.setNumberOfAdmin(userRepository.countAllByUserCategory("A"));
+        responseDto.setTotalActiveRole(roleRepository.countAllByIsActive(true));
+        responseDto.setTotalInactiveRole(roleRepository.countAllByIsActive(false));
+        responseDto.setTotalRole(roleRepository.findAll().size());
+        return responseDto;
+    }
+
+    public RoleDashboardResponseDto getTopCountriesByAdmin() {
+        RoleDashboardResponseDto responseDto = new RoleDashboardResponseDto();
         responseDto.setNumberOfAdmin(roleRepository.countAllByName("Admin"));
         responseDto.setTotalActiveRole(roleRepository.countAllByIsActive(true));
         responseDto.setTotalInactiveRole(roleRepository.countAllByIsActive(false));
@@ -119,7 +129,7 @@ public class BackOfficeDashboardService {
     public BackOfficeEnumeratorResponseDto populateBackOfficeEnumeratorInfo(){
         BackOfficeEnumeratorResponseDto responseDto = new BackOfficeEnumeratorResponseDto();
         responseDto.setActiveEnumerator(enumeratorRepository.countAllByIsActive(true));
-//        responseDto.setPendingEnumerator(enumeratorRepository);
+        responseDto.setPendingEnumerator(enumeratorRepository.countAllByStatus(EnumeratorStatus.PENDING));
         responseDto.setTotalEnumerator(enumeratorRepository.findAll().size());
         responseDto.setTotalSubmission(submissionRepository.findAll().size());
         return responseDto;
