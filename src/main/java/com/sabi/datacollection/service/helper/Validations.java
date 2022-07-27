@@ -165,8 +165,11 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
         organisationTypeRepository.findById(enumerator.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
+
+        projectRoleRepository.findById(enumerator.getProjectRoleId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Organisation type id!"));
+                        "Enter a valid Role id!"));
     }
 
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
@@ -190,6 +193,8 @@ public class Validations {
         countryRepository.findById(enumeratorPropertiesDto.getCountryId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Country id!"));
+        organisationTypeRepository.findById(enumeratorPropertiesDto.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
     }
 
     public void validateEnumeratorUpdate(EnumeratorDto enumeratorPropertiesDto) {
