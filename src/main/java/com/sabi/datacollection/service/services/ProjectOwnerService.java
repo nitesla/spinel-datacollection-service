@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings("ALL")
@@ -321,6 +322,19 @@ public class ProjectOwnerService {
         return projectOwners;
     }
 
+    public ProjectOwnerResponseDto findProjectOwnerByUserId(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested user Id does not exist!"));
+        ProjectOwner projectOwner = projectOwnerRepository.findProjectOwnerByUserId(userId);
+        if(Objects.isNull(projectOwner)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested project owner object does not exist");
+        }
+        ProjectOwner projectOwnerResponse = setTransientFields(projectOwner);
+        return mapper.map(projectOwnerResponse, ProjectOwnerResponseDto.class);
+    }
+
     public void enableDisable (EnableDisableDto request, HttpServletRequest request1){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
@@ -359,7 +373,7 @@ public class ProjectOwnerService {
         userService.forgetPassword(request);
     }
 
-    private void setTransientFields(ProjectOwner projectOwner){
+    private ProjectOwner setTransientFields(ProjectOwner projectOwner){
         if(projectOwner.getLgaId() != null) {
             Optional<LGA> lga = lgaRepository.findById(projectOwner.getLgaId());
             if(lga.isPresent())
@@ -380,6 +394,6 @@ public class ProjectOwnerService {
             if(user.isPresent())
                 projectOwner.setUserIsActive(user.get().getIsActive());
         }
-
+        return projectOwner;
     }
 }

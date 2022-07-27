@@ -20,6 +20,8 @@ public interface EnumeratorRepository extends JpaRepository<Enumerator, Long> {
 
     Enumerator findEnumeratorById(Long id);
 
+    Enumerator findEnumeratorByUserId(Long userId);
+
     List<Enumerator> findByIsActive(Boolean isActive);
 
     List<Enumerator> findAll();

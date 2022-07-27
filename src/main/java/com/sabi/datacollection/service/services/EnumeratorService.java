@@ -340,6 +340,20 @@ public class EnumeratorService {
     }
 
 
+    public EnumeratorResponseDto getEnumeratorWithUserId(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                "Requested user Id does not exist!"));
+        Enumerator enumerator = repository.findEnumeratorByUserId(userId);
+        if(Objects.isNull(enumerator)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested enumerator object does not exist");
+        }
+        Enumerator enumeratorResponse = setTransientFields(enumerator);
+        return mapper.map(enumeratorResponse, EnumeratorResponseDto.class);
+    }
+
+
     public Page<Enumerator> findAll(String name, PageRequest pageRequest ){
         Page<Enumerator> enumeratorProperties = repository.findEnumeratorsProperties(name,pageRequest);
         if(enumeratorProperties == null){
