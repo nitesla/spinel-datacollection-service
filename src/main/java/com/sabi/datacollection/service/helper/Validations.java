@@ -16,6 +16,7 @@ import com.sabi.framework.dto.requestDto.GeneratePassword;
 import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
+import com.sabi.framework.models.Role;
 import com.sabi.framework.models.User;
 import com.sabi.framework.repositories.RoleRepository;
 import com.sabi.framework.repositories.UserRepository;
@@ -76,6 +77,45 @@ public class Validations {
 
 //    @Autowired
 //    private WalletRepository walletRepository;
+
+    public void validateDataUser(DataCollectionUserRequestDto request){
+        if (request.getFirstName() == null || request.getFirstName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (request.getFirstName().length() < 2 || request.getFirstName().length() > 100)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+
+        if (request.getLastName() == null || request.getLastName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (request.getLastName().length() < 2 || request.getLastName().length() > 100)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
+
+        if (request.getEmail() == null || request.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
+        if (!Utility.validEmail(request.getEmail().trim()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
+        User user = userRepository.findByEmail(request.getEmail());
+        if(user !=null){
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Email already exist");
+        }
+        if (request.getPhone() == null || request.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
+        if (request.getPhone().length() < 8 || request.getPhone().length() > 14)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
+        if (!Utility.isNumeric(request.getPhone()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
+        User userExist = userRepository.findByPhone(request.getPhone());
+        if(userExist !=null){
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "  user phone already exist");
+        }
+        if(request.getRoleId() == null){
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Role id cannot be empty");
+        }
+
+        Role role = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid role id!"));
+
+    }
 
 
     public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository) {
