@@ -234,6 +234,9 @@ public class EnumeratorService {
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
         User user = userRepository.getOne(enumerator.getUserId());
+        user.setUpdatedBy(enumerator.getUserId());
+        user.setIsActive(true);
+        userRepository.save(user);
 
         CompleteSignUpResponse response = CompleteSignUpResponse.builder()
                 .enumeratorId(enumerator.getId())
