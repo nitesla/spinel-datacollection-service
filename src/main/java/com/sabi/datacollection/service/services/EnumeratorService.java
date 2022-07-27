@@ -271,6 +271,7 @@ public class EnumeratorService {
         String password = request.getPassword();
         user.setPassword(passwordEncoder.encode(password));
         user.setPasswordChangedOn(LocalDateTime.now());
+        user.setIsActive(true);
         user = userRepository.save(user);
 
         PreviousPasswords previousPasswords = PreviousPasswords.builder()
@@ -440,11 +441,11 @@ public class EnumeratorService {
 
     private Enumerator setTransientFields(Enumerator enumeratorProperties) {
 
-        if(Objects.nonNull(enumeratorProperties.getOrganisationTypeId()))
+        if(Objects.nonNull(enumeratorProperties.getOrganisationTypeId()) && enumeratorProperties.getOrganisationTypeId() > 0)
             enumeratorProperties.setOrganisationType(organisationTypeRepository.findOrganisationTypeById(enumeratorProperties.getOrganisationTypeId()).getName());
 
         LGA lga = null;
-        if(Objects.nonNull(enumeratorProperties.getLgaId())) {
+        if(Objects.nonNull(enumeratorProperties.getLgaId()) && enumeratorProperties.getLgaId() > 0) {
             lga = lgaRepository.findLGAById(enumeratorProperties.getLgaId());
             enumeratorProperties.setLga(lga.getName());
         }
@@ -452,10 +453,10 @@ public class EnumeratorService {
         if(Objects.nonNull(lga))
             enumeratorProperties.setState(stateRepository.getOne(lga.getStateId()).getName());
 
-        if(Objects.nonNull(enumeratorProperties.getCountryId()))
+        if(Objects.nonNull(enumeratorProperties.getCountryId()) && enumeratorProperties.getCountryId() > 0)
             enumeratorProperties.setCountry(countryRepository.getOne(enumeratorProperties.getCountryId()).getName());
 
-        if(Objects.nonNull(enumeratorProperties.getProjectRoleId()))
+        if(Objects.nonNull(enumeratorProperties.getProjectRoleId()) && enumeratorProperties.getProjectRoleId() > 0)
             enumeratorProperties.setProjectRole(projectRoleRepository.getOne(enumeratorProperties.getProjectRoleId()).getName());
 
         return enumeratorProperties;
