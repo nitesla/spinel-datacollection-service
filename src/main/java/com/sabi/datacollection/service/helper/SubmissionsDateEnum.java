@@ -20,7 +20,7 @@ public enum SubmissionsDateEnum {
 
     public static void validateDateEnum(String string) {
         Arrays.stream(values()).parallel().filter(value -> value.getValue().equals(string.toLowerCase()))
-                .findFirst().orElseThrow(() -> new BadRequestException(CustomResponseCode.BAD_REQUEST, "Enter month or day"));
+                .findFirst().orElseThrow(() -> new BadRequestException(CustomResponseCode.BAD_REQUEST, "Enter month/week/day"));
     }
 
     public static String lengthError() {
