@@ -8,9 +8,11 @@ import com.sabi.datacollection.core.dto.response.SubmissionResponseDto;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.CommentDictionary;
 import com.sabi.datacollection.core.models.Submission;
+import com.sabi.datacollection.service.helper.SubmissionsDateEnum;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.CommentDictionaryRepository;
 import com.sabi.datacollection.service.repositories.SubmissionRepository;
+import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
@@ -22,7 +24,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -147,7 +152,53 @@ public class SubmissionService {
     public List<Submission> getAll(Boolean isActive){
         List<Submission> submissions = submissionRepository.findByIsActive(isActive);
         return submissions;
+    }
 
+    public Map<String, Integer> getSubmissions(int length, String dateType) {
+        SubmissionsDateEnum.validateDateEnum(dateType);
+        LocalDateTime startDate = LocalDateTime.now();
+        HashMap<String, Integer> submissions = new HashMap<>();
+
+        if(SubmissionsDateEnum.MONTH.getValue().equals(dateType)) {
+            if(length > SubmissionsDateEnum.MONTH.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.MONTH.getPeriod());
+
+            for(int i = 1; i <= length; i++) {
+                submissions.put(String.valueOf(startDate.getMonth()), getSubmissionsPerMonth(startDate));
+                startDate = startDate.minusMonths(1);
+            }
+        }
+
+        if(SubmissionsDateEnum.WEEK.getValue().equals(dateType)) {
+            if(length > SubmissionsDateEnum.WEEK.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.WEEK.getPeriod());
+
+            for(int i = 1; i <= length; i++) {
+                submissions.put(String.valueOf(startDate.getDayOfWeek()), getSubmissionsPerDay(startDate));
+                startDate = startDate.minusDays(1);
+            }
+        }
+
+        if(SubmissionsDateEnum.DAY.getValue().equals(dateType)) {
+            if(length > SubmissionsDateEnum.DAY.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.DAY.getPeriod());
+
+            for(int i = 1; i <= length; i++) {
+                submissions.put(String.valueOf(startDate.getDayOfMonth()), getSubmissionsPerDay(startDate));
+                startDate = startDate.minusDays(1);
+            }
+        }
+        return submissions;
+    }
+
+    private int getSubmissionsPerMonth(LocalDateTime startDate) {
+        LocalDateTime endDate = startDate.minusMonths(1);
+        return submissionRepository.findSubmissionBySubmissionDateBetween(endDate, startDate).size();
+    }
+
+    private int getSubmissionsPerDay(LocalDateTime startDate) {
+        LocalDateTime endDate = startDate.minusDays(1);
+        return submissionRepository.findSubmissionBySubmissionDateBetween(endDate, startDate).size();
     }
 
 

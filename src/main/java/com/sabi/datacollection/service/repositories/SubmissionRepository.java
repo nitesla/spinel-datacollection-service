@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -24,6 +25,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Submission> findByIsActive(Boolean isActive);
 
     List<Submission> findAll();
+
+    List<Submission> findSubmissionBySubmissionDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 
 
     @Query("SELECT s FROM Submission s WHERE ((:projectId IS NULL) OR (:projectId IS NOT NULL AND s.projectId = :projectId))" +
