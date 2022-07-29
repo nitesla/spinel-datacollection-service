@@ -30,6 +30,7 @@ public interface EnumeratorRepository extends JpaRepository<Enumerator, Long> {
 
     Integer countAllByIsActive(Boolean isActive);
 
+    List<Enumerator> findEnumeratorByVerificationStatus(String verificationStatus);
 
     @Query("SELECT p FROM Enumerator p WHERE ((:corporateName IS NULL) OR (:corporateName IS NOT NULL AND p.corporateName like %:corporateName%)) order by p.id desc")
     Page<Enumerator> findEnumeratorsProperties(@Param("corporateName") String corporateName, Pageable pageable);

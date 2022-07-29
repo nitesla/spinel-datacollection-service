@@ -2,6 +2,7 @@ package com.sabi.datacollection.service.helper;
 
 
 import com.sabi.datacollection.core.dto.request.*;
+import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.Gender;
 import com.sabi.datacollection.core.enums.Location;
 import com.sabi.datacollection.core.enums.Status;
@@ -230,6 +231,8 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
         if (!EnumUtils.isValidEnum(Gender.class, enumeratorPropertiesDto.getGender().toUpperCase()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for gender: MALE/FEMALE/OTHERS");
+        if (!EnumUtils.isValidEnum(EnumeratorVerificationStatus.class, enumeratorPropertiesDto.getVerificationStatus().toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for verificationStatus: PENDING/VERIFIED/UNVERIFIED");
         countryRepository.findById(enumeratorPropertiesDto.getCountryId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Country id!"));

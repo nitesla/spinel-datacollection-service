@@ -10,6 +10,7 @@ import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
+import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.DateFormatter;
@@ -37,6 +38,7 @@ import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -477,5 +479,30 @@ public class EnumeratorService {
             enumeratorProperties.setProjectRole(projectRoleRepository.getOne(enumeratorProperties.getProjectRoleId()).getName());
 
         return enumeratorProperties;
+    }
+
+    public void updateVerificationStatus(Long id, String verificationStatus) {
+        Enumerator enumerator = repository.findById(id).orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                "Requested enumerator Id does not exist!"));
+        validateEnumeratorVerificationStatus(verificationStatus);
+        enumerator.setVerificationStatus(verificationStatus);
+        repository.save(enumerator);
+    }
+
+    public List<Enumerator> getEnumeratorByVerificartionStatus(String verificationStatus) {
+        validateEnumeratorVerificationStatus(verificationStatus);
+        List<Enumerator> enumerators = repository.findEnumeratorByVerificationStatus(verificationStatus);
+        for (Enumerator enumerator : enumerators
+        ) {
+            setTransientFields(enumerator);
+        }
+        return enumerators;
+    }
+
+
+
+    private void validateEnumeratorVerificationStatus(String verificationStatus) {
+        if (!EnumUtils.isValidEnum(EnumeratorVerificationStatus.class, verificationStatus.toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for verificationStatus: PENDING/VERIFIED/UNVERIFIED");
     }
 }
