@@ -2,7 +2,6 @@ package com.sabi.datacollection.service.repositories;
 
 
 
-import com.sabi.datacollection.core.enums.EnumeratorStatus;
 import com.sabi.datacollection.core.models.Enumerator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +20,9 @@ public interface EnumeratorRepository extends JpaRepository<Enumerator, Long> {
 
     Enumerator findEnumeratorById(Long id);
 
+    Enumerator findEnumeratorByUserId(Long userId);
+
+    List<Enumerator> findByIsActive(Boolean isActive);
     List<Enumerator> findEnumeratorByIsActive(Boolean isActive);
 
     List<Enumerator> findAll();
@@ -29,6 +31,7 @@ public interface EnumeratorRepository extends JpaRepository<Enumerator, Long> {
 
     Integer countAllByIsActive(Boolean isActive);
 
+    List<Enumerator> findEnumeratorByVerificationStatus(String verificationStatus);
     Integer countAllByStatus(EnumeratorStatus status);
 
 

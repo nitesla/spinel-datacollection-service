@@ -10,9 +10,11 @@ import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
+import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.EnumeratorStatus;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
+import com.sabi.datacollection.service.helper.DateFormatter;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
@@ -20,7 +22,6 @@ import com.sabi.framework.exceptions.BadRequestException;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.PreviousPasswords;
-import com.sabi.framework.models.Role;
 import com.sabi.framework.models.User;
 import com.sabi.framework.models.UserRole;
 import com.sabi.framework.notification.requestDto.NotificationRequestDto;
@@ -28,7 +29,6 @@ import com.sabi.framework.notification.requestDto.RecipientRequest;
 import com.sabi.framework.notification.requestDto.SmsRequest;
 import com.sabi.framework.notification.requestDto.WhatsAppRequest;
 import com.sabi.framework.repositories.PreviousPasswordRepository;
-import com.sabi.framework.repositories.RoleRepository;
 import com.sabi.framework.repositories.UserRepository;
 import com.sabi.framework.repositories.UserRoleRepository;
 import com.sabi.framework.service.AuditTrailService;
@@ -39,6 +39,7 @@ import com.sabi.framework.utils.AuditTrailFlag;
 import com.sabi.framework.utils.CustomResponseCode;
 import com.sabi.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -82,14 +83,15 @@ public class EnumeratorService {
     private final UserRoleRepository userRoleRepository;
     private final ProjectEnumeratorService projectEnumeratorService;
     private final CountryRepository countryRepository;
-    private final RoleRepository roleRepository;
+    private final ProjectRoleRepository projectRoleRepository;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
                              PreviousPasswordRepository previousPasswordRepository, ModelMapper mapper,
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
-                             StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService, CountryRepository countryRepository, RoleRepository roleRepository) {
+                             StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService,
+                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -103,7 +105,7 @@ public class EnumeratorService {
         this.userRoleRepository = userRoleRepository;
         this.projectEnumeratorService = projectEnumeratorService;
         this.countryRepository = countryRepository;
-        this.roleRepository = roleRepository;
+        this.projectRoleRepository = projectRoleRepository;
     }
 
 
@@ -161,11 +163,13 @@ public class EnumeratorService {
         previousPasswordRepository.save(previousPasswords);
 
         Enumerator saveEnumerator = new Enumerator();
+        saveEnumerator.setFirstName(request.getFirstName());
+        saveEnumerator.setLastName(request.getLastName());
+        saveEnumerator.setProjectRoleId(request.getProjectRoleId());
         saveEnumerator.setUserId(user.getId());
         saveEnumerator.setIsActive(false);
         saveEnumerator.setCreatedBy(user.getId());
         saveEnumerator.setCorp(request.getIsCorp());
-        saveEnumerator.setStatus(EnumeratorStatus.PENDING);
         if (request.getIsCorp() == true){
             saveEnumerator.setCorporateName(request.getCorporateName());
         }
@@ -229,11 +233,13 @@ public class EnumeratorService {
 
         enumerator.setUpdatedBy(enumerator.getUserId());
         enumerator.setIsActive(true);
-        enumerator.setStatus(EnumeratorStatus.COMPLETED);
         repository.save(enumerator);
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
         User user = userRepository.getOne(enumerator.getUserId());
+        user.setUpdatedBy(enumerator.getUserId());
+        user.setIsActive(true);
+        userRepository.save(user);
 
         CompleteSignUpResponse response = CompleteSignUpResponse.builder()
                 .enumeratorId(enumerator.getId())
@@ -271,6 +277,7 @@ public class EnumeratorService {
         String password = request.getPassword();
         user.setPassword(passwordEncoder.encode(password));
         user.setPasswordChangedOn(LocalDateTime.now());
+        user.setIsActive(true);
         user = userRepository.save(user);
 
         PreviousPasswords previousPasswords = PreviousPasswords.builder()
@@ -316,6 +323,9 @@ public class EnumeratorService {
         mapper.map(request, enumeratorProperties);
         enumeratorProperties.setUpdatedBy(userCurrent.getId());
         repository.save(enumeratorProperties);
+        userCurrent.setFirstName(request.getFirstName());
+        userCurrent.setLastName(request.getLastName());
+        userRepository.save(userCurrent);
         log.debug("enumerator asset record updated - {}"+ new Gson().toJson(enumeratorProperties));
         auditTrailService
                 .logEvent(userCurrent.getUsername(),
@@ -332,11 +342,21 @@ public class EnumeratorService {
                         "Requested enumerator properties Id does not exist!"));
         Enumerator enumerator = setTransientFields(enumeratorProperties);
         EnumeratorResponseDto enumeratorResponseDto = mapper.map(enumerator, EnumeratorResponseDto.class);
-        if(Objects.nonNull(enumerator.getUserId()) && enumerator.getUserId() != 0) {
-            Role role = roleRepository.findById(userRoleRepository.findByUserId(enumerator.getUserId()).getId()).get();
-            enumeratorResponseDto.setRole(role.getName());
-        }
         return enumeratorResponseDto;
+    }
+
+
+    public EnumeratorResponseDto getEnumeratorWithUserId(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                "Requested user Id does not exist!"));
+        Enumerator enumerator = repository.findEnumeratorByUserId(userId);
+        if(Objects.isNull(enumerator)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested enumerator object does not exist");
+        }
+        Enumerator enumeratorResponse = setTransientFields(enumerator);
+        return mapper.map(enumeratorResponse, EnumeratorResponseDto.class);
     }
 
 
@@ -414,6 +434,31 @@ public class EnumeratorService {
 
     }
 
+    public HashMap<String, Integer> enumeratorSummary(long enumeratorId, String startDate, String endDate) {
+        LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
+        LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
+
+        int activeProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end).size();
+        int submittedSurveys = 0;
+        int assignedTasks = 0;
+        int pendindTasks = 0;
+        int taskInProgress = 0;
+        int inCompleteSurveys = 0;
+        int activeLocations = 0;
+        int amountEarned = 0;
+
+        return new HashMap<String, Integer>() {{
+            put("activeProjects", activeProjects);
+            put("submittedSurveys", submittedSurveys);
+            put("assignedTasks", assignedTasks);
+            put("pendindTasks", pendindTasks);
+            put("taskInProgress", taskInProgress);
+            put("inCompleteSurveys", inCompleteSurveys);
+            put("activeLocations", activeLocations);
+            put("amountEarned", amountEarned);
+        }};
+    }
+
     private Enumerator setTransientFields(Enumerator enumeratorProperties) {
 
         if(Objects.nonNull(enumeratorProperties.getOrganisationTypeId()) && enumeratorProperties.getOrganisationTypeId() > 0)
@@ -431,9 +476,34 @@ public class EnumeratorService {
         if(Objects.nonNull(enumeratorProperties.getCountryId()) && enumeratorProperties.getCountryId() > 0)
             enumeratorProperties.setCountry(countryRepository.getOne(enumeratorProperties.getCountryId()).getName());
 
-//        if(Objects.nonNull(enumeratorProperties.getProjectRoleId()) && enumeratorProperties.getProjectRoleId() > 0)
-//            enumeratorProperties.setProjectRole(projectRoleRepository.getOne(enumeratorProperties.getProjectRoleId()).getName());
+        if(Objects.nonNull(enumeratorProperties.getProjectRoleId()) && enumeratorProperties.getProjectRoleId() > 0)
+            enumeratorProperties.setProjectRole(projectRoleRepository.getOne(enumeratorProperties.getProjectRoleId()).getName());
 
         return enumeratorProperties;
+    }
+
+    public void updateVerificationStatus(Long id, String verificationStatus) {
+        Enumerator enumerator = repository.findById(id).orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                "Requested enumerator Id does not exist!"));
+        validateEnumeratorVerificationStatus(verificationStatus);
+        enumerator.setVerificationStatus(verificationStatus);
+        repository.save(enumerator);
+    }
+
+    public List<Enumerator> getEnumeratorByVerificartionStatus(String verificationStatus) {
+        validateEnumeratorVerificationStatus(verificationStatus);
+        List<Enumerator> enumerators = repository.findEnumeratorByVerificationStatus(verificationStatus);
+        for (Enumerator enumerator : enumerators
+        ) {
+            setTransientFields(enumerator);
+        }
+        return enumerators;
+    }
+
+
+
+    private void validateEnumeratorVerificationStatus(String verificationStatus) {
+        if (!EnumUtils.isValidEnum(EnumeratorVerificationStatus.class, verificationStatus.toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for verificationStatus: PENDING/VERIFIED/UNVERIFIED");
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -14,10 +15,15 @@ public interface ProjectEnumeratorRepository extends JpaRepository<ProjectEnumer
     ProjectEnumerator findByProjectIdAndEnumeratorId(Long projectId, Long enumeratorId);
     List<ProjectEnumerator> findByProjectId(Long projectId);
     List<ProjectEnumerator> findByEnumeratorId(Long enumeratorId);
+    List<ProjectEnumerator> findByEnumeratorIdAndCreatedDateBetween(Long enumeratorId, LocalDateTime start, LocalDateTime end);
 
     List<ProjectEnumerator> findAllByIsActive(boolean isActive);
 
-    @Query("SELECT pe FROM ProjectEnumerator pe WHERE ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND pe.enumeratorId=:enumeratorId))" +
-            "AND ((:projectId IS NULL ) OR (:projectId IS NOT NULL AND pe.projectId=:projectId)) ORDER BY pe.id DESC ")
-    Page<ProjectEnumerator> findProjectEnumerators(Long projectId,Long enumeratorId,Pageable pageable);
+    @Query(value = "SELECT ProjectEnumerator.* FROM Enumerator, ProjectEnumerator WHERE " +
+        "ProjectEnumerator.enumeratorId=Enumerator.id " +
+        "AND ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND ProjectEnumerator.enumeratorId = :enumeratorId)) " +
+        "AND ((:projectId IS NULL ) OR (:projectId IS NOT NULL AND ProjectEnumerator.projectId = :projectId)) " +
+        "AND ((:name IS NULL) OR (CONCAT(Enumerator.firstName, \" \" ,Enumerator.lastName) LIKE %:name%) " +
+        "OR (CONCAT(Enumerator.lastName, \" \" ,Enumerator.firstName) LIKE %:name%))", nativeQuery = true)
+    Page<ProjectEnumerator> findProjectEnumerators(Long projectId,Long enumeratorId,String name,Pageable pageable);
 }

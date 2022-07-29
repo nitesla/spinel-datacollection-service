@@ -22,6 +22,8 @@ public interface ProjectOwnerRepository extends JpaRepository<ProjectOwner, Long
 
     Integer countAllByIsActive(boolean isActive);
 
+    ProjectOwner findProjectOwnerByUserId(Long userId);
+
     @Query("SELECT p FROM ProjectOwner p WHERE ((:firstname IS NULL) OR (:firstname IS NOT NULL AND p.firstname like %:firstname%))" +
             " AND ((:lastname IS NULL) OR (:lastname IS NOT NULL AND p.lastname like  %:lastname%)) " +
             " AND ((:email IS NULL) OR (:email IS NOT NULL AND p.email like %:email%)) order by p.id desc")

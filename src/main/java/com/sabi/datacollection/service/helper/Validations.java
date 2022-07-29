@@ -2,6 +2,7 @@ package com.sabi.datacollection.service.helper;
 
 
 import com.sabi.datacollection.core.dto.request.*;
+import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.Gender;
 import com.sabi.datacollection.core.enums.Location;
 import com.sabi.datacollection.core.enums.Status;
@@ -46,9 +47,8 @@ public class Validations {
     private final SectorRepository sectorRepository;
     private final IndicatorDictionaryRepository indicatorDictionaryRepository;
     private final DataSetRepository dataSetRepository;
-//    private final DataRoleRepository dataRoleRepository;
-//    private final DataPermissionRepository dataPermissionRepository;
     private final DataUserRepository dataUserRepository;
+    private final ProjectRoleRepository projectRoleRepository;
 
     //private final FormRepository formRepository;
 
@@ -119,7 +119,7 @@ public class Validations {
     }
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -130,9 +130,8 @@ public class Validations {
         this.sectorRepository = sectorRepository;
         this.indicatorDictionaryRepository = indicatorDictionaryRepository;
         this.dataSetRepository = dataSetRepository;
-//        this.dataRoleRepository = dataRoleRepository;
-//        this.dataPermissionRepository = dataPermissionRepository;
         this.dataUserRepository = dataUserRepository;
+        this.projectRoleRepository = projectRoleRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -207,8 +206,11 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
         organisationTypeRepository.findById(enumerator.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
+
+        projectRoleRepository.findById(enumerator.getProjectRoleId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Organisation type id!"));
+                        "Enter a valid Role id!"));
     }
 
     public void validateEnumeratorProperties(CompleteSignupRequest enumeratorPropertiesDto) {
@@ -229,9 +231,13 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Email cannot be empty");
         if (!EnumUtils.isValidEnum(Gender.class, enumeratorPropertiesDto.getGender().toUpperCase()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for gender: MALE/FEMALE/OTHERS");
+        if (!EnumUtils.isValidEnum(EnumeratorVerificationStatus.class, enumeratorPropertiesDto.getVerificationStatus().toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for verificationStatus: PENDING/VERIFIED/UNVERIFIED");
         countryRepository.findById(enumeratorPropertiesDto.getCountryId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Country id!"));
+        organisationTypeRepository.findById(enumeratorPropertiesDto.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
     }
 
     public void validateEnumeratorUpdate(EnumeratorDto enumeratorPropertiesDto) {
@@ -609,6 +615,11 @@ public class Validations {
         if(!Arrays.stream(Status.values()).anyMatch((t) -> t.name().equals(status))){
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid value for status!");
         }
+    }
+
+    public void validateProjectRole(ProjectRoleDto request) {
+        if (request.getName() == null || request.getName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
 }
