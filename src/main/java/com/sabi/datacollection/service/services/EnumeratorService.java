@@ -170,6 +170,7 @@ public class EnumeratorService {
         saveEnumerator.setIsActive(false);
         saveEnumerator.setCreatedBy(user.getId());
         saveEnumerator.setCorp(request.getIsCorp());
+        saveEnumerator.setStatus(EnumeratorStatus.PENDING);
         if (request.getIsCorp() == true){
             saveEnumerator.setCorporateName(request.getCorporateName());
         }
@@ -233,6 +234,7 @@ public class EnumeratorService {
 
         enumerator.setUpdatedBy(enumerator.getUserId());
         enumerator.setIsActive(true);
+        enumerator.setStatus(EnumeratorStatus.ACTIVE);
         repository.save(enumerator);
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
