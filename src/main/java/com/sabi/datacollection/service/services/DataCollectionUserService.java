@@ -87,11 +87,11 @@ public class DataCollectionUserService {
         user.setUsername(request.getEmail());
         user.setCreatedBy(userCurrent.getId());
         if (request.getUserCategory().equals(UserCategory.ENUMERATOR)){
-            user.setUserCategory("E");
+            user.setUserCategory(UserCategory.ENUMERATOR.toString());
         } else if (request.getUserCategory().equals(UserCategory.PROJECT_OWNER)){
-            user.setUserCategory("U");
+            user.setUserCategory(UserCategory.PROJECT_OWNER.toString());
         } else{
-            user.setUserCategory("A");
+            user.setUserCategory(UserCategory.ADMIN.toString());
         }
 //        user.setUserCategory(String.valueOf(request.getUserCategory()));
 //        user.setClientId(supplierUser.getSupplierId());
