@@ -93,6 +93,8 @@ public class DataCollectionUserService {
         } else{
             user.setUserCategory(UserCategory.ADMIN.toString());
         }
+        user.setResetToken(Utility.registrationCode("HHmmss"));
+        user.setResetTokenExpirationDate(Utility.tokenExpiration());
 //        user.setUserCategory(String.valueOf(request.getUserCategory()));
 //        user.setClientId(supplierUser.getSupplierId());
         user.setIsActive(false);

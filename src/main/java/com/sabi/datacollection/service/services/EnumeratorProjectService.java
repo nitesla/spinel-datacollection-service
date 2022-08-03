@@ -75,8 +75,8 @@ public class EnumeratorProjectService {
     }
 
 
-    public Page<EnumeratorProject> findAll(Long projectId, Long enumeratorId, LocalDateTime assignedDate, LocalDateTime completionDate, Status status, PageRequest pageRequest ) {
-        Page<EnumeratorProject> projectCategories = enumeratorRatingRepository.findEnumeratorProjects(projectId, enumeratorId, assignedDate, completionDate, status, pageRequest);
+    public Page<EnumeratorProject> findAll(Long projectId, Long enumeratorId, String verificationStatus, LocalDateTime assignedDate, LocalDateTime completionDate, Status status, PageRequest pageRequest ) {
+        Page<EnumeratorProject> projectCategories = enumeratorRatingRepository.findEnumeratorProjects(projectId, enumeratorId, verificationStatus, assignedDate, completionDate, status, pageRequest);
         if (projectCategories == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
