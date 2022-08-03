@@ -12,6 +12,7 @@ import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.EnumeratorStatus;
+import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.DateFormatter;
