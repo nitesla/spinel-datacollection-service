@@ -445,13 +445,13 @@ public class EnumeratorService {
     }
 
     public HashMap<String, Integer> enumeratorSummary(long enumeratorId, String startDate, String endDate) {
-        DateFormatter.checkStartAndEndDate(startDate, endDate);
         repository.findById(enumeratorId)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested enumerator properties Id does not exist!"));
 
         LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
         LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
+        DateFormatter.checkStartAndEndDate(start, end);
 
         int activeProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end).size();
         int submittedSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end),

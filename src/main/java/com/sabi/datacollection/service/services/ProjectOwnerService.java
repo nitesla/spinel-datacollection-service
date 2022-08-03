@@ -399,12 +399,12 @@ public class ProjectOwnerService {
 
 
     public HashMap<String, Integer> getProjectSummary(Long projectOwnerId, String startDate, String endDate) {
-        DateFormatter.checkStartAndEndDate(startDate, endDate);
         projectOwnerRepository.findById(projectOwnerId)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
         LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
         LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
+        DateFormatter.checkStartAndEndDate(start, end);
 
         int projectsCreated = projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end).size();
         int totalSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), null);
