@@ -4,10 +4,7 @@ import com.sabi.datacollection.core.dto.request.CompleteSignupRequest;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerSignUpDto;
-import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
-import com.sabi.datacollection.core.dto.response.ProjectOwnerActivationResponse;
-import com.sabi.datacollection.core.dto.response.ProjectOwnerResponseDto;
-import com.sabi.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
+import com.sabi.datacollection.core.dto.response.*;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
@@ -207,7 +204,7 @@ public class ProjectOwnerService {
           return response;
     }
 
-    public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request){
+    public CompleteProjectOwnerSignUpResponse completeSignUp(CompleteSignupRequest request){
        validations.validateProjectOwnerCompleteSignUp(request);
        ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -228,8 +225,8 @@ public class ProjectOwnerService {
        user.setPasswordChangedOn(LocalDateTime.now());
        userRepository.save(user);
 
-        CompleteSignUpResponse response = CompleteSignUpResponse.builder()
-                .enumeratorId(projectOwner.getId())
+        CompleteProjectOwnerSignUpResponse response = CompleteProjectOwnerSignUpResponse.builder()
+                .projectOwnerId(projectOwner.getId())
                 .email(projectOwner.getEmail())
                 .corporateName(projectOwner.getCorporateName())
                 .phone(projectOwner.getPhone())
