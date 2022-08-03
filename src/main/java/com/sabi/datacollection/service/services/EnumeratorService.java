@@ -11,6 +11,7 @@ import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
 import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
 import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
 import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
+import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.DateFormatter;
@@ -83,6 +84,7 @@ public class EnumeratorService {
     private final ProjectEnumeratorService projectEnumeratorService;
     private final CountryRepository countryRepository;
     private final ProjectRoleRepository projectRoleRepository;
+    private final SubmissionService submissionService;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
@@ -90,7 +92,7 @@ public class EnumeratorService {
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
                              StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService,
-                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository) {
+                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository, SubmissionService submissionService) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -105,6 +107,7 @@ public class EnumeratorService {
         this.projectEnumeratorService = projectEnumeratorService;
         this.countryRepository = countryRepository;
         this.projectRoleRepository = projectRoleRepository;
+        this.submissionService = submissionService;
     }
 
 
@@ -411,8 +414,13 @@ public class EnumeratorService {
     }
 
     public HashMap<String, Integer> enumeratorSummary(long enumeratorId) {
+        repository.findById(enumeratorId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested enumerator properties Id does not exist!"));
+
         int activeProjects = projectEnumeratorService.getEnumeratorProject(enumeratorId).size();
-        int submittedSurveys = 0;
+        int submittedSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProject(enumeratorId),
+                Status.COMPLETED);
         int assignedTasks = 0;
         int pendindTasks = 0;
         int taskInProgress = 0;
@@ -434,11 +442,17 @@ public class EnumeratorService {
     }
 
     public HashMap<String, Integer> enumeratorSummary(long enumeratorId, String startDate, String endDate) {
+        DateFormatter.checkStartAndEndDate(startDate, endDate);
+        repository.findById(enumeratorId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested enumerator properties Id does not exist!"));
+
         LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
         LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
 
         int activeProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end).size();
-        int submittedSurveys = 0;
+        int submittedSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end),
+                Status.COMPLETED);
         int assignedTasks = 0;
         int pendindTasks = 0;
         int taskInProgress = 0;

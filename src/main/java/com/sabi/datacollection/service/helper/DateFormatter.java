@@ -18,7 +18,7 @@ public class DateFormatter {
         }
         if(startDate != null) {
             if (tryParseDate(startDate).after(tryParseDate(endDate))) {
-                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "start date cannot be greater than end date");
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "start date cannot be later than end date");
             }
         }
     }
