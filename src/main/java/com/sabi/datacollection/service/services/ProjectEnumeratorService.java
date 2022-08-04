@@ -3,6 +3,7 @@ package com.sabi.datacollection.service.services;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectEnumeratorRequestDto;
 import com.sabi.datacollection.core.dto.response.ProjectEnumeratorResponseDto;
+import com.sabi.datacollection.core.enums.VerificationStatus;
 import com.sabi.datacollection.core.models.Enumerator;
 import com.sabi.datacollection.core.models.Project;
 import com.sabi.datacollection.core.models.ProjectEnumerator;
@@ -162,8 +163,8 @@ public class ProjectEnumeratorService {
       </summary>
       <remarks>This method searches for all project enumerators and returns pagination</remarks>
      */
-    public Page<ProjectEnumerator> searchAll(Long projectId, Long enumeratorId, String name, PageRequest pageRequest){
-        Page<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findProjectEnumerators(projectId,enumeratorId,name,pageRequest);
+    public Page<ProjectEnumerator> searchAll(Long projectId, Long enumeratorId, VerificationStatus verification, PageRequest pageRequest){
+        Page<ProjectEnumerator> projectEnumerators = projectEnumeratorRepository.findProjectEnumerators(projectId,enumeratorId, verification,pageRequest);
         if (projectEnumerators ==null)
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"No records found");
         for (ProjectEnumerator projectEnumerator: projectEnumerators) {
@@ -221,7 +222,6 @@ public class ProjectEnumeratorService {
         if(Objects.nonNull(projectEnumerator.getProjectId())) {
             Optional<Project> project = projectRepository.findById(projectEnumerator.getProjectId());
             project.ifPresent(value -> projectEnumerator.setDescription(value.getDescription()));
-
         }
         if(Objects.nonNull(projectEnumerator.getEnumeratorId())) {
             Optional<Enumerator> enumerator = enumeratorRepository.findById(projectEnumerator.getEnumeratorId());
@@ -234,6 +234,7 @@ public class ProjectEnumeratorService {
                 projectEnumerator.setPicture(enumerator.get().getPictureUrl());
                 projectEnumerator.setFirstName(enumerator.get().getFirstName());
                 projectEnumerator.setLastName(enumerator.get().getLastName());
+                projectEnumerator.setVerification(enumerator.get().getVerification());
             }
         }
 

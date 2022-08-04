@@ -6,14 +6,12 @@ import com.sabi.datacollection.core.dto.request.CompleteSignupRequest;
 import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.EnumeratorDto;
 import com.sabi.datacollection.core.dto.request.EnumeratorSignUpDto;
-import com.sabi.datacollection.core.dto.response.CompleteSignUpResponse;
-import com.sabi.datacollection.core.dto.response.EnumeratorActivationResponse;
-import com.sabi.datacollection.core.dto.response.EnumeratorResponseDto;
-import com.sabi.datacollection.core.dto.response.EnumeratorSignUpResponseDto;
+import com.sabi.datacollection.core.dto.response.*;
 import com.sabi.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.sabi.datacollection.core.enums.EnumeratorStatus;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.enums.UserCategory;
+import com.sabi.datacollection.core.enums.VerificationStatus;
 import com.sabi.datacollection.core.models.*;
 import com.sabi.datacollection.service.helper.DateFormatter;
 import com.sabi.datacollection.service.helper.Validations;
@@ -174,6 +172,7 @@ public class EnumeratorService {
         saveEnumerator.setCreatedBy(user.getId());
         saveEnumerator.setCorp(request.getIsCorp());
         saveEnumerator.setStatus(EnumeratorStatus.PENDING);
+        saveEnumerator.setVerification(VerificationStatus.one);
         if (request.getIsCorp() == true){
             saveEnumerator.setCorporateName(request.getCorporateName());
         }
@@ -238,6 +237,7 @@ public class EnumeratorService {
         enumerator.setUpdatedBy(enumerator.getUserId());
         enumerator.setIsActive(true);
         enumerator.setStatus(EnumeratorStatus.ACTIVE);
+        enumerator.setVerification(VerificationStatus.three);
         repository.save(enumerator);
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
@@ -521,5 +521,28 @@ public class EnumeratorService {
     private void validateEnumeratorVerificationStatus(String verificationStatus) {
         if (!EnumUtils.isValidEnum(EnumeratorVerificationStatus.class, verificationStatus.toUpperCase()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for verificationStatus: PENDING/VERIFIED/UNVERIFIED");
+    }
+
+    public EnumeratorKYCResponseDto getEnumeratorKYC(Long id) {
+//        userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        "Requested user Id does not exist!"));
+        Enumerator enumerator = repository.findEnumeratorById(id);
+        if(Objects.isNull(enumerator)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested enumerator object does not exist");
+        }
+        EnumeratorKYCResponseDto enumeratorResponse = new EnumeratorKYCResponseDto();
+        enumeratorResponse.setAddress(enumerator.getAddress());
+        enumeratorResponse.setFirstName(enumerator.getFirstName());
+        enumeratorResponse.setLastName(enumerator.getLastName());
+        enumeratorResponse.setVerificationStatus(enumerator.getVerificationStatus());
+        enumeratorResponse.setEmail(enumerator.getEmail());
+//        enumeratorResponse.setCardImage(enumerator.);
+//        enumeratorResponse.setIdCardNumber(enumerator);
+        enumeratorResponse.setGender(enumerator.getGender());
+        enumeratorResponse.setPhone(enumerator.getPhone());
+        enumeratorResponse.setPictureUrl(enumerator.getPictureUrl());
+        return mapper.map(enumeratorResponse, EnumeratorKYCResponseDto.class);
     }
 }
