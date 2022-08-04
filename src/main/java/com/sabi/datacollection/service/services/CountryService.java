@@ -4,11 +4,11 @@ package com.sabi.datacollection.service.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.sabi.datacollection.core.dto.request.CountryDto;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.response.CountryResponseDto;
 import com.sabi.datacollection.core.models.Country;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.CountryRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
@@ -120,12 +120,12 @@ public class CountryService {
      * </summary>
      * <remarks>this method is responsible for enabling and dis enabling a country</remarks>
      */
-    public void enableDisEnableState (EnableDisEnableDto request){
+    public void enableDisEnableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Country country = countryRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Country Id does not exist!"));
-        country.setIsActive(request.isActive());
+        country.setIsActive(request.getIsActive());
         country.setUpdatedBy(userCurrent.getId());
         countryRepository.save(country);
 

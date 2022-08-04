@@ -15,11 +15,13 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
+*.idea
 *.iws
 *.iml
 *.ipr
 workspace.xml
 .idea/workspace.xml
+pom.xml
 
 ### NetBeans ###
 /nbproject/private/

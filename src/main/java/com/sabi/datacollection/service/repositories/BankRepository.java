@@ -1,6 +1,5 @@
 package com.sabi.datacollection.service.repositories;
 
-
 import com.sabi.datacollection.core.models.Bank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -3,19 +3,19 @@ package com.sabi.datacollection.service.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.sabi.datacollection.core.dto.request.BankDto;
+import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.response.BankResponseDto;
 import com.sabi.datacollection.core.models.Bank;
+import com.sabi.datacollection.service.helper.GenericSpecification;
+import com.sabi.datacollection.service.helper.SearchCriteria;
 import com.sabi.datacollection.service.helper.SearchOperation;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.BankRepository;
-import com.sabi.framework.dto.requestDto.EnableDisEnableDto;
 import com.sabi.framework.exceptions.ConflictException;
 import com.sabi.framework.exceptions.NotFoundException;
 import com.sabi.framework.models.User;
 import com.sabi.framework.service.TokenService;
 import com.sabi.framework.utils.CustomResponseCode;
-import com.sabi.datacollection.service.helper.GenericSpecification;
-import com.sabi.datacollection.service.helper.SearchCriteria;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -126,12 +126,12 @@ public class BankService {
      * </summary>
      * <remarks>this method is responsible for enabling and dis enabling a bank</remarks>
      */
-    public void enableDisable (EnableDisEnableDto request){
+    public void enableDisable (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Bank bank  = bankRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested bank Id does not exist!"));
-        bank.setIsActive(request.isActive());
+        bank.setIsActive(request.getIsActive());
         bank.setUpdatedBy(userCurrent.getId());
         bankRepository.save(bank);
 
