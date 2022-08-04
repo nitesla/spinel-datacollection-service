@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -22,6 +23,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByProjectCategoryId(Long categoryId);
 
     List<Project> findByProjectOwnerId(Long projectOwnerId);
+
+    List<Project> findByProjectOwnerIdAndStatus(Long projectOwnerId, Status status);
+
+    List<Project> findByProjectOwnerIdAndCreatedDateBetween(Long projectOwnerId, LocalDateTime start, LocalDateTime end);
+
+    List<Project> findByProjectOwnerIdAndStatusAndCreatedDateBetween(Long projectOwnerId, Status status, LocalDateTime start, LocalDateTime end);
 
     List<Project> findByIsActive(Boolean isActive);
 
