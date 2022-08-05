@@ -124,8 +124,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.sabi.framework</groupId>
-			<artifactId>sabi-framework</artifactId>
+			<groupId>com.spinel.framework</groupId>
+			<artifactId>spinel-framework</artifactId>
 			<version>1.0</version>
 		</dependency>
 
