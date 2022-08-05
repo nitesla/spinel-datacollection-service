@@ -68,24 +68,24 @@ public class FormService {
     }
 
 
-    /** <summary>
-     * Form update
-     * </summary>
-     * <remarks>this method is responsible for updating already existing forms</remarks>
-     */
+//    /** <summary>
+//     * Form update
+//     * </summary>
+//     * <remarks>this method is responsible for updating already existing forms</remarks>
+//     */
 
-    public FormResponseDto updateForm(FormDto request) {
-        validations.validateForm(request);
-        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
-        Form form = formRepository.findById(request.getId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested Form Id does not exist!"));
-        mapper.map(request, form);
-        form.setUpdatedBy(userCurrent.getId());
-        formRepository.save(form);
-        log.debug("Form record updated - {}"+ new Gson().toJson(form));
-        return mapper.map(form, FormResponseDto.class);
-    }
+//    public FormResponseDto updateForm(FormDto request) {
+//        validations.validateForm(request);
+//        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
+//        Form form = formRepository.findById(request.getId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        "Requested Form Id does not exist!"));
+//        mapper.map(request, form);
+//        form.setUpdatedBy(userCurrent.getId());
+//        formRepository.save(form);
+//        log.debug("Form record updated - {}"+ new Gson().toJson(form));
+//        return mapper.map(form, FormResponseDto.class);
+//    }
 
 
     /** <summary>

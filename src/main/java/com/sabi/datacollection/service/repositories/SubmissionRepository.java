@@ -26,6 +26,10 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findAll();
 
+    List<Submission> findSubmissionByProjectId(Long projectId);
+
+    List<Submission> findSubmissionByProjectIdAndStatus(long projectId, Status status);
+
     List<Submission> findSubmissionBySubmissionDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 
 

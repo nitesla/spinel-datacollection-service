@@ -5,8 +5,11 @@ import com.sabi.datacollection.core.dto.request.EnableDisableDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerDto;
 import com.sabi.datacollection.core.dto.request.ProjectOwnerSignUpDto;
 import com.sabi.datacollection.core.dto.response.*;
+import com.sabi.datacollection.core.enums.Status;
+import com.sabi.datacollection.core.dto.response.*;
 import com.sabi.datacollection.core.enums.UserCategory;
 import com.sabi.datacollection.core.models.*;
+import com.sabi.datacollection.service.helper.DateFormatter;
 import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.*;
 import com.sabi.framework.dto.requestDto.ChangePasswordDto;
@@ -35,10 +38,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -66,10 +66,11 @@ public class ProjectOwnerService {
     private final UserRoleRepository userRoleRepository;
     private final ProjectRepository projectRepository;
     private final UserService userService;
+    private final SubmissionService submissionService;
 
     public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository,
                                AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
-                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService) {
+                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService, SubmissionService submissionService) {
         this.projectOwnerUserRepository = projectOwnerUserRepository;
         this.organisationTypeRepository = organisationTypeRepository;
         this.lgaRepository = lgaRepository;
@@ -83,6 +84,7 @@ public class ProjectOwnerService {
         this.userRoleRepository = userRoleRepository;
         this.projectRepository = projectRepository;
         this.userService = userService;
+        this.submissionService = submissionService;
     }
 
     public ProjectOwnerSignUpResponseDto projectOwnerSignUp(ProjectOwnerSignUpDto request, HttpServletRequest request1) {
@@ -203,7 +205,7 @@ public class ProjectOwnerService {
           return response;
     }
 
-    public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request){
+    public CompleteProjectOwnerSignUpResponse completeSignUp(CompleteSignupRequest request){
        validations.validateProjectOwnerCompleteSignUp(request);
        ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -224,8 +226,8 @@ public class ProjectOwnerService {
        user.setPasswordChangedOn(LocalDateTime.now());
        userRepository.save(user);
 
-        CompleteSignUpResponse response = CompleteSignUpResponse.builder()
-                .enumeratorId(projectOwner.getId())
+        CompleteProjectOwnerSignUpResponse response = CompleteProjectOwnerSignUpResponse.builder()
+                .projectOwnerId(projectOwner.getId())
                 .email(projectOwner.getEmail())
                 .corporateName(projectOwner.getCorporateName())
                 .phone(projectOwner.getPhone())
@@ -240,7 +242,7 @@ public class ProjectOwnerService {
         return response;
     }
 
-    public ProjectOwnerActivationResponse enumeratorPasswordActivation(ChangePasswordDto request) {
+    public ProjectOwnerActivationResponse passwordActivation(ChangePasswordDto request) {
         User user = userRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested user id does not exist!"));
@@ -368,6 +370,55 @@ public class ProjectOwnerService {
 
     public void forgetPassword (ForgetPasswordDto request) {
         userService.forgetPassword(request);
+    }
+
+    public HashMap<String, Integer> getProjectSummary(Long projectOwnerId) {
+        projectOwnerRepository.findById(projectOwnerId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Owner Id does not exist!"));
+
+        int projectsCreated = projectRepository.findByProjectOwnerId(projectOwnerId).size();
+        int totalSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), null);
+        int projectsInProgress = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.ONGOING).size();
+        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), Status.COMPLETED);
+        int completedProjects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.COMPLETED).size();
+        int unSubmittedSurveys = totalSurveys - submittedSurveys;
+
+        return new HashMap<String, Integer>() {{
+            put("projectsCreated", projectsCreated);
+            put("totalSurveys", totalSurveys);
+            put("projectsInProgress", projectsInProgress);
+            put("submittedSurveys", submittedSurveys);
+            put("completedProjects", completedProjects);
+            put("unSubmittedSurveys", unSubmittedSurveys);
+        }};
+    }
+
+
+
+    public HashMap<String, Integer> getProjectSummary(Long projectOwnerId, String startDate, String endDate) {
+        projectOwnerRepository.findById(projectOwnerId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Owner Id does not exist!"));
+        LocalDateTime start = DateFormatter.convertToLocalDate(startDate);
+        LocalDateTime end = Objects.nonNull(endDate) ? DateFormatter.convertToLocalDate(endDate) : LocalDateTime.now();
+        DateFormatter.checkStartAndEndDate(start, end);
+
+        int projectsCreated = projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end).size();
+        int totalSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), null);
+        int projectsInProgress = projectRepository.findByProjectOwnerIdAndStatusAndCreatedDateBetween(projectOwnerId, Status.ONGOING, start, end).size();
+        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), Status.COMPLETED);
+        int completedProjects = projectRepository.findByProjectOwnerIdAndStatusAndCreatedDateBetween(projectOwnerId, Status.COMPLETED, start, end).size();
+        int unSubmittedSurveys = totalSurveys - submittedSurveys;
+
+        return new HashMap<String, Integer>() {{
+            put("projectsCreated", projectsCreated);
+            put("totalSurveys", totalSurveys);
+            put("projectsInProgress", projectsInProgress);
+            put("submittedSurveys", submittedSurveys);
+            put("completedProjects", completedProjects);
+            put("unSubmittedSurveys", unSubmittedSurveys);
+        }};
     }
 
     private ProjectOwner setTransientFields(ProjectOwner projectOwner){

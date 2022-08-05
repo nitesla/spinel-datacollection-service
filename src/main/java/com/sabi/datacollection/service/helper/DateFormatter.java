@@ -18,7 +18,18 @@ public class DateFormatter {
         }
         if(startDate != null) {
             if (tryParseDate(startDate).after(tryParseDate(endDate))) {
-                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "start date cannot be greater than end date");
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "start date cannot be later than end date");
+            }
+        }
+    }
+
+    public static void checkStartAndEndDate(LocalDateTime startDate, LocalDateTime endDate) {
+        if((startDate != null && endDate == null) || (endDate != null && startDate == null)){
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Date cannot be empty");
+        }
+        if(startDate != null) {
+            if (startDate.isAfter(endDate)) {
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "start date cannot be later than end date");
             }
         }
     }

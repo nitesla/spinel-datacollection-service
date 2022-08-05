@@ -7,6 +7,8 @@ import com.sabi.datacollection.core.dto.request.SubmissionDto;
 import com.sabi.datacollection.core.dto.response.SubmissionResponseDto;
 import com.sabi.datacollection.core.enums.Status;
 import com.sabi.datacollection.core.models.CommentDictionary;
+import com.sabi.datacollection.core.models.Project;
+import com.sabi.datacollection.core.models.ProjectEnumerator;
 import com.sabi.datacollection.core.models.Submission;
 import com.sabi.datacollection.service.helper.SubmissionsDateEnum;
 import com.sabi.datacollection.service.helper.Validations;
@@ -28,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -199,6 +202,34 @@ public class SubmissionService {
     private int getSubmissionsPerDay(LocalDateTime startDate) {
         LocalDateTime endDate = startDate.minusDays(1);
         return submissionRepository.findSubmissionBySubmissionDateBetween(endDate, startDate).size();
+    }
+
+    public int getSurveysForProject(List<Project> projects, Status status) {
+        int count = 0;
+        if(Objects.isNull(status)) {
+            for (Project project : projects) {
+                count += submissionRepository.findSubmissionByProjectId(project.getId()).size();
+            }
+        }else {
+            for (Project project : projects) {
+                count += submissionRepository.findSubmissionByProjectIdAndStatus(project.getId(), status).size();
+            }
+        }
+        return count;
+    }
+
+    public int getSurveysForProjectEnumerator(List<ProjectEnumerator> projectEnumerators, Status status) {
+        int count = 0;
+        if(Objects.isNull(status)) {
+            for (ProjectEnumerator projectEnumerator : projectEnumerators) {
+                count += submissionRepository.findSubmissionByProjectId(projectEnumerator.getProjectId()).size();
+            }
+        }else {
+            for (ProjectEnumerator projectEnumerator : projectEnumerators) {
+                count += submissionRepository.findSubmissionByProjectIdAndStatus(projectEnumerator.getProjectId(), status).size();
+            }
+        }
+        return count;
     }
 
 
