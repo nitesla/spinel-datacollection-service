@@ -9,10 +9,10 @@
 		<version>2.1.6.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.sabi.datacollection.service</groupId>
-	<artifactId>sabi-datacollection-service</artifactId>
+	<groupId>com.spinel.datacollection.service</groupId>
+	<artifactId>spinel-datacollection-service</artifactId>
 	<version>1.0</version>
-	<name>sabi-datacollection-service</name>
+	<name>spinel-datacollection-service</name>
 	<description>service</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -124,14 +124,14 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.sabi.framework</groupId>
-			<artifactId>sabi-framework</artifactId>
+			<groupId>com.spinel.framework</groupId>
+			<artifactId>spinel-framework</artifactId>
 			<version>1.0</version>
 		</dependency>
 
 		<dependency>
-			<groupId>com.sabi.datacollection.core</groupId>
-			<artifactId>sabi-datacollection-core</artifactId>
+			<groupId>com.spinel.datacollection.core</groupId>
+			<artifactId>spinel-datacollection-core</artifactId>
 			<version>1.0</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/javax.validation/validation-api -->
@@ -155,7 +155,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
-		<finalName>sabi-datacollection-service</finalName>
+		<finalName>spinel-datacollection-service</finalName>
 	</build>
 
 </project>
