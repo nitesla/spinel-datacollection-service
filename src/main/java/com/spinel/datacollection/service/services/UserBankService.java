@@ -1,17 +1,17 @@
-package com.sabi.datacollection.service.services;
+package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.sabi.datacollection.core.dto.request.EnableDisableDto;
-import com.sabi.datacollection.core.dto.request.UserBankRequestDto;
 import com.sabi.datacollection.core.dto.response.UserBankResponseDto;
 import com.sabi.datacollection.core.models.UserBank;
-import com.sabi.datacollection.service.helper.Validations;
 import com.sabi.datacollection.service.repositories.UserBankRepository;
-import com.sabi.framework.exceptions.NotFoundException;
-import com.sabi.framework.models.User;
-import com.sabi.framework.service.TokenService;
-import com.sabi.framework.utils.CustomResponseCode;
+import com.spinel.datacollection.core.dto.request.EnableDisableDto;
+import com.spinel.datacollection.core.dto.request.UserBankRequestDto;
+import com.spinel.datacollection.service.helper.Validations;
+import com.spinel.framework.exceptions.NotFoundException;
+import com.spinel.framework.models.User;
+import com.spinel.framework.service.TokenService;
+import com.spinel.framework.utils.CustomResponseCode;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
