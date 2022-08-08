@@ -1,6 +1,6 @@
 package com.spinel.datacollection.service.services;
 
-
+import com.sabi.datacollection.core.dto.response.*;
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.dto.response.CompleteProjectOwnerSignUpResponse;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerActivationResponse;
@@ -241,6 +241,8 @@ public class ProjectOwnerService {
                 .userEmail(user.getEmail())
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
+                .idCard(projectOwner.getIdCard())
+                .idNumber(projectOwner.getIdNumber())
                 .build();
         return response;
     }
@@ -458,5 +460,28 @@ public class ProjectOwnerService {
                 projectOwner.setUserIsActive(user.get().getIsActive());
         }
         return projectOwner;
+    }
+
+    public ProjectOwnerEnumeratorKyc getProjectOwnerKYC(Long id) {
+//        userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        "Requested user Id does not exist!"));
+        ProjectOwner projectOwner = projectOwnerRepository.findProjectOwnerById(id);
+        if(Objects.isNull(projectOwner)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested project owner object does not exist");
+        }
+        ProjectOwnerEnumeratorKyc projectOwnerEnumeratorKyc = new ProjectOwnerEnumeratorKyc();
+        projectOwnerEnumeratorKyc.setAddress(projectOwner.getAddress());
+        projectOwnerEnumeratorKyc.setFirstName(projectOwner.getFirstname());
+        projectOwnerEnumeratorKyc.setLastName(projectOwner.getLastname());
+        projectOwnerEnumeratorKyc.setVerificationStatus(projectOwner.getCorporateName());
+        projectOwnerEnumeratorKyc.setEmail(projectOwner.getEmail());
+//        enumeratorResponse.setCardImage(enumerator.);
+//        enumeratorResponse.setIdCardNumber(enumerator);
+        projectOwnerEnumeratorKyc.setAccountManager(projectOwner.getAccountManager());
+        projectOwnerEnumeratorKyc.setCAC(projectOwner.getCAC());
+//        projectOwnerEnumeratorKyc.setO(projectOwner.getOrganisationType());
+        return mapper.map(projectOwnerEnumeratorKyc, ProjectOwnerEnumeratorKyc.class);
     }
 }
