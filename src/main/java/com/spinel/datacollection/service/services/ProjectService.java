@@ -5,11 +5,13 @@ import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.ProjectDto;
 import com.spinel.datacollection.core.dto.response.ProjectResponseDto;
 import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.models.Project;
 import com.spinel.datacollection.core.models.ProjectCategory;
 import com.spinel.datacollection.core.models.ProjectOwner;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.ProjectCategoryRepository;
+import com.spinel.datacollection.service.repositories.ProjectOwnerEnumeratorRepository;
 import com.spinel.datacollection.service.repositories.ProjectOwnerRepository;
 import com.spinel.datacollection.service.repositories.ProjectRepository;
 
@@ -28,11 +30,14 @@ import org.apache.commons.lang3.EnumUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,17 +52,21 @@ public class ProjectService {
     private final AuditTrailService auditTrailService;
     private final ModelMapper mapper;
     private final Validations validations;
+    private final SubmissionService submissionService;
+    private final ProjectOwnerEnumeratorRepository projectOwnerEnumeratorRepository;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations) {
+    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations, SubmissionService submissionService, ProjectOwnerEnumeratorRepository projectOwnerEnumeratorRepository) {
         this.projectRepository = projectRepository;
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
         this.auditTrailService = auditTrailService;
         this.mapper = mapper;
         this.validations = validations;
+        this.submissionService = submissionService;
+        this.projectOwnerEnumeratorRepository = projectOwnerEnumeratorRepository;
     }
 
-    public ProjectResponseDto createProject(ProjectDto request, HttpServletRequest request1) {
+    public ProjectResponseDto createProject(ProjectDto request,  HttpServletRequest request1) {
         validations.validateProject(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Project projectExists = projectRepository.findByName(request.getName());
@@ -161,8 +170,9 @@ public class ProjectService {
         return projects;
     }
 
-    public Page<Project> findAll(String name, PageRequest pageRequest ) {
-        Page<Project> projects = projectRepository.findProjects(name, pageRequest);
+    public Page<Project> findAll(String name, String status, String category, PageRequest pageRequest ) {
+        if(Objects.nonNull(status)) validations.validateProjectStatus(status.toUpperCase());
+        Page<Project> projects = projectRepository.findProjects(name, Objects.nonNull(status) ? status.toUpperCase() : null, category, pageRequest);
         if (projects == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
@@ -222,5 +232,59 @@ public class ProjectService {
             project.setProjectCategory(projectCategory.getName());
             project.setProjectCategoryDescription(projectCategory.getDescription());
         }
+    }
+
+
+
+    public HashMap<String, Integer> getProjectSummary(Long projectOwnerId) {
+        validateProjectOwner(projectOwnerId);
+
+        int totalProjects = projectRepository.findByProjectOwnerId(projectOwnerId).size();
+        int totalCategories = projectRepository.getDistinctCategoryForProjectOwner(projectOwnerId).size();
+        int enumerators = projectOwnerEnumeratorRepository.findProjectOwnerEnumeratorByProjectOwnerId(projectOwnerId).size();;
+        int submissions = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), null);
+        int activeProjects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.ONGOING).size();
+        int pendingProjects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.INACTIVE).size();
+        int pendingSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), SubmissionStatus.INREVIEW);
+        int drafts = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.DRAFT).size();
+
+        return new HashMap<String, Integer>() {{
+            put("totalProjects", totalProjects);
+            put("totalCategories", totalCategories);
+            put("enumerators", enumerators);
+            put("submissions", submissions);
+            put("activeProjects", activeProjects);
+            put("pendingProjects", pendingProjects);
+            put("pendingSurveys", pendingSurveys);
+            put("drafts", drafts);
+        }};
+    }
+
+    public Page<Project> getRecentProjects(Long projectOwnerId, int count) {
+        validateProjectOwner(projectOwnerId);
+        Sort sortType = Sort.by(Sort.Order.desc("id"));
+        Pageable pageable = PageRequest.of(0, count, sortType);
+        Page<Project> projects = projectRepository.findByProjectOwnerId(projectOwnerId, pageable);
+        projects.forEach(project -> {
+            setTransientFields(project);
+        });
+        return projects;
+    }
+
+    public Page<Project> getDrafts(Long projectOwnerId, int count) {
+        validateProjectOwner(projectOwnerId);
+        Sort sortType = Sort.by(Sort.Order.desc("id"));
+        Pageable pageable = PageRequest.of(0, count, sortType);
+        Page<Project> projects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.DRAFT, pageable);
+        projects.forEach(project -> {
+            setTransientFields(project);
+        });
+        return projects;
+    }
+
+    private void validateProjectOwner(Long projectOwnerId){
+        projectOwnerRepository.findById(projectOwnerId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Owner Id does not exist!"));
     }
 }
