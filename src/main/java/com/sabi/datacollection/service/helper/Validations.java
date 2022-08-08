@@ -49,6 +49,7 @@ public class Validations {
     private final DataSetRepository dataSetRepository;
     private final DataUserRepository dataUserRepository;
     private final ProjectRoleRepository projectRoleRepository;
+    private final DataWalletRepository walletRepository;
 
     //private final FormRepository formRepository;
 
@@ -119,7 +120,7 @@ public class Validations {
     }
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository, DataWalletRepository walletRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -132,6 +133,7 @@ public class Validations {
         this.dataSetRepository = dataSetRepository;
         this.dataUserRepository = dataUserRepository;
         this.projectRoleRepository = projectRoleRepository;
+        this.walletRepository = walletRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -559,14 +561,30 @@ public class Validations {
     }
 
     public void validateTransaction(TransactionDto request) {
+        if (request.getHash() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "hash field cannot be empty");
+
         if (request.getWalletId() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "walletId cannot be empty");
         if (request.getAmount() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "amount cannot be empty");
-
-//        walletRepository.findById(request.getWalletId())
-//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-//                        " Enter a valid Wallet Id!"));
+        if (request.getInitialBalance() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "initBalance cannot be empty");
+        if (request.getFinalBalance() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "finalBalance cannot be empty");
+        if (request.getSenderId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "senderId cannot be empty");
+        if (request.getReceiverId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "receiverId cannot be empty");
+        walletRepository.findById(request.getWalletId())
+              .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                       " Enter a valid Wallet Id!"));
+        userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid valid Sender Id!"));
+        userRepository.findById(request.getReceiverId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Receiver Id!"));
     }
 
     public void validateBank(BankDto bankDto) {

@@ -59,6 +59,7 @@ public class BackOfficeDashboardService {
         responseDto.setInactiveClient(projectOwnerRepository.countAllByIsActive(false));
 //        responseDto.setVerifiedClient(projectOwnerRepository.countAllByIsActive());
 //        responseDto.setUnverifiedClient();
+
         return responseDto;
     }
 
