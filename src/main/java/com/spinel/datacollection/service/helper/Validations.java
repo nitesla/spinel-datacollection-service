@@ -4,10 +4,7 @@ package com.spinel.datacollection.service.helper;
 
 
 import com.spinel.datacollection.core.dto.request.*;
-import com.spinel.datacollection.core.enums.EnumeratorVerificationStatus;
-import com.spinel.datacollection.core.enums.Gender;
-import com.spinel.datacollection.core.enums.Location;
-import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Country;
 import com.spinel.datacollection.core.models.LGA;
 import com.spinel.datacollection.core.models.ProjectOwner;
@@ -32,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 
 @SuppressWarnings("All")
 @Slf4j
@@ -51,6 +49,7 @@ public class Validations {
     private final DataSetRepository dataSetRepository;
     private final DataUserRepository dataUserRepository;
     private final ProjectRoleRepository projectRoleRepository;
+//    private final projectW
 
     //private final FormRepository formRepository;
 
@@ -121,12 +120,7 @@ public class Validations {
     }
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository,
-                       LGARepository lgaRepository, UserRepository userRepository,
-                       ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository,
-                       SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository,
-                       DataSetRepository dataSetRepository, DataUserRepository dataUserRepository,
-                       ProjectRoleRepository projectRoleRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -322,6 +316,22 @@ public class Validations {
         ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(completeSignupRequest.getPhone());
         if (projectOwnerPhone != null )
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
+    }
+
+    public void validateUpdateProjectOwner(UpdateProjectOwnerDto request) {
+        projectCategoryRepository.findById(request.getProjectCategoryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Project Category  Id does not exist!"));
+        if (request.getEmail() == null || request.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
+        if (request.getFirstName() == null || request.getFirstName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "firstname cannot be empty");
+        if (request.getLastName() == null || request.getLastName().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "lastname cannot be empty");
+        if (request.getPhone() == null || request.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "phone cannot be empty");
+        if (Objects.nonNull(request.getGender()) && !EnumUtils.isValidEnum(Gender.class, request.getGender().toUpperCase()))
+            throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for gender: MALE/FEMALE/OTHERS");
     }
 
     public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {
@@ -547,6 +557,7 @@ public class Validations {
         commentDictionaryRepository.findById(request.getCommentId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Comment Id!"));
+        validateSubmissionStatus(request.getStatus().toString());
 
 //        formRepository.findById(request.getFormId())
 //                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -620,6 +631,12 @@ public class Validations {
 
     public void validateProjectStatus(String status) {
         if(!Arrays.stream(Status.values()).anyMatch((t) -> t.name().equals(status))){
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid value for status!");
+        }
+    }
+
+    public void validateSubmissionStatus(String status) {
+        if(!Arrays.stream(SubmissionStatus.values()).anyMatch((t) -> t.name().equals(status))){
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid value for status!");
         }
     }

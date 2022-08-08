@@ -6,10 +6,12 @@ import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.SubmissionDto;
 import com.spinel.datacollection.core.dto.response.SubmissionResponseDto;
 import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.models.CommentDictionary;
 import com.spinel.datacollection.core.models.Project;
 import com.spinel.datacollection.core.models.ProjectEnumerator;
 import com.spinel.datacollection.core.models.Submission;
+import com.spinel.datacollection.service.helper.DateEnum;
 import com.spinel.datacollection.service.helper.SubmissionsDateEnum;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.CommentDictionaryRepository;
@@ -123,7 +125,7 @@ public class SubmissionService {
      * </summary>
      * <remarks>this method is responsible for getting all records in pagination</remarks>
      */
-    public Page<Submission> findAll(Long projectId, Long formId, Status status, Long enumeratorId, PageRequest pageRequest ){
+    public Page<Submission> findAll(Long projectId, Long formId, SubmissionStatus status, Long enumeratorId,  PageRequest pageRequest ){
         Page<Submission> submission = submissionRepository.findSubmissions(projectId, formId, status, enumeratorId, pageRequest);
             if(submission == null){
                 throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
@@ -159,13 +161,13 @@ public class SubmissionService {
     }
 
     public Map<String, Integer> getSubmissions(int length, String dateType) {
-        SubmissionsDateEnum.validateDateEnum(dateType);
+        DateEnum.validateDateEnum(dateType);
         LocalDateTime startDate = LocalDateTime.now();
         HashMap<String, Integer> submissions = new HashMap<>();
 
-        if(SubmissionsDateEnum.MONTH.getValue().equals(dateType)) {
-            if(length > SubmissionsDateEnum.MONTH.getPeriod())
-                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.MONTH.getPeriod());
+        if(DateEnum.MONTH.getValue().equals(dateType)) {
+            if(length > DateEnum.MONTH.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, DateEnum.lengthError() + DateEnum.MONTH.getPeriod());
 
             for(int i = 1; i <= length; i++) {
                 submissions.put(String.valueOf(startDate.getMonth()), getSubmissionsPerMonth(startDate));
@@ -173,9 +175,9 @@ public class SubmissionService {
             }
         }
 
-        if(SubmissionsDateEnum.WEEK.getValue().equals(dateType)) {
-            if(length > SubmissionsDateEnum.WEEK.getPeriod())
-                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.WEEK.getPeriod());
+        if(DateEnum.WEEK.getValue().equals(dateType)) {
+            if(length > DateEnum.WEEK.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, DateEnum.lengthError() + DateEnum.WEEK.getPeriod());
 
             for(int i = 1; i <= length; i++) {
                 submissions.put(String.valueOf(startDate.getDayOfWeek()), getSubmissionsPerDay(startDate));
@@ -183,9 +185,9 @@ public class SubmissionService {
             }
         }
 
-        if(SubmissionsDateEnum.DAY.getValue().equals(dateType)) {
-            if(length > SubmissionsDateEnum.DAY.getPeriod())
-                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, SubmissionsDateEnum.lengthError() + SubmissionsDateEnum.DAY.getPeriod());
+        if(DateEnum.DAY.getValue().equals(dateType)) {
+            if(length > DateEnum.DAY.getPeriod())
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, DateEnum.lengthError() + DateEnum.DAY.getPeriod());
 
             for(int i = 1; i <= length; i++) {
                 submissions.put(String.valueOf(startDate.getDayOfMonth()), getSubmissionsPerDay(startDate));
@@ -205,7 +207,8 @@ public class SubmissionService {
         return submissionRepository.findSubmissionBySubmissionDateBetween(endDate, startDate).size();
     }
 
-    public int getSurveysForProject(List<Project> projects, Status status) {
+    public int getSurveysForProject(List<Project> projects, SubmissionStatus status) {
+        if(projects.size() == 0) return 0;
         int count = 0;
         if(Objects.isNull(status)) {
             for (Project project : projects) {
@@ -219,7 +222,8 @@ public class SubmissionService {
         return count;
     }
 
-    public int getSurveysForProjectEnumerator(List<ProjectEnumerator> projectEnumerators, Status status) {
+    public int getSurveysForProjectEnumerator(List<ProjectEnumerator> projectEnumerators, SubmissionStatus status) {
+        if(projectEnumerators.size() == 0) return 0;
         int count = 0;
         if(Objects.isNull(status)) {
             for (ProjectEnumerator projectEnumerator : projectEnumerators) {
