@@ -1,6 +1,6 @@
 package com.spinel.datacollection.service.repositories;
 
-import com.sabi.datacollection.core.models.UserBank;
+import com.spinel.datacollection.core.models.UserBank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
