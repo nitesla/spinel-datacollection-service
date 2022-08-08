@@ -5,10 +5,14 @@ import com.google.gson.Gson;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.TransactionDto;
 import com.spinel.datacollection.core.dto.response.TransactionResponseDto;
+import com.spinel.datacollection.core.enums.ActionType;
+import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.TransactionType;
 import com.spinel.datacollection.core.models.Transaction;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.TransactionRepository;
-
+import com.spinel.framework.exceptions.BadRequestException;
+import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
 import com.spinel.framework.models.User;
 import com.spinel.framework.service.TokenService;
@@ -18,8 +22,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
