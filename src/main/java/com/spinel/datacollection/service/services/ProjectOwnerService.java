@@ -1,33 +1,6 @@
-package com.sabi.datacollection.service.services;
+package com.spinel.datacollection.service.services;
 
-import com.sabi.datacollection.core.dto.request.CompleteSignupRequest;
-import com.sabi.datacollection.core.dto.request.EnableDisableDto;
-import com.sabi.datacollection.core.dto.request.ProjectOwnerDto;
-import com.sabi.datacollection.core.dto.request.ProjectOwnerSignUpDto;
 import com.sabi.datacollection.core.dto.response.*;
-import com.sabi.datacollection.core.enums.Status;
-import com.sabi.datacollection.core.dto.response.*;
-import com.sabi.datacollection.core.enums.UserCategory;
-import com.sabi.datacollection.core.models.*;
-import com.sabi.datacollection.service.helper.DateFormatter;
-import com.sabi.datacollection.service.helper.Validations;
-import com.sabi.datacollection.service.repositories.*;
-import com.sabi.framework.dto.requestDto.ChangePasswordDto;
-import com.sabi.framework.dto.requestDto.ForgetPasswordDto;
-import com.sabi.framework.exceptions.BadRequestException;
-import com.sabi.framework.exceptions.ConflictException;
-import com.sabi.framework.exceptions.NotFoundException;
-import com.sabi.framework.models.PreviousPasswords;
-import com.sabi.framework.models.User;
-import com.sabi.framework.models.UserRole;
-import com.sabi.framework.notification.requestDto.*;
-import com.sabi.framework.repositories.PreviousPasswordRepository;
-import com.sabi.framework.repositories.UserRepository;
-import com.sabi.framework.repositories.UserRoleRepository;
-import com.sabi.framework.service.*;
-import com.sabi.framework.utils.AuditTrailFlag;
-import com.sabi.framework.utils.CustomResponseCode;
-import com.sabi.framework.utils.Utility;
 import com.spinel.datacollection.core.dto.request.CompleteSignupRequest;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.ProjectOwnerDto;
@@ -270,6 +243,8 @@ public class ProjectOwnerService {
                 .userEmail(user.getEmail())
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
+                .idCard(projectOwner.getIdCard())
+                .idNumber(projectOwner.getIdNumber())
                 .build();
         return response;
     }

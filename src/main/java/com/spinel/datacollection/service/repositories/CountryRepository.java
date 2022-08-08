@@ -18,6 +18,8 @@ public interface CountryRepository extends JpaRepository<Country, Long> {
 
     Country findByName(String name);
 
+    Country findCountryById(Long id);
+
     @Query("SELECT c FROM Country c WHERE ((:name IS NULL) OR (:name IS NOT NULL AND c.name like %:name%))" +
             " AND ((:code IS NULL) OR (:code IS NOT NULL AND c.code like %:code%)) order by c.id desc")
     List<Country> findAllByNameAndCode(@Param("name") String name,

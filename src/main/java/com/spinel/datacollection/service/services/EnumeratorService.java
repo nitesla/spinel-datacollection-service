@@ -225,8 +225,8 @@ public class EnumeratorService {
         return response;
     }
 
-
     public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request, HttpServletRequest request1) {
+        request.setVerificationStatus(String.valueOf(EnumeratorVerificationStatus.VERIFIED));
         validations.validateEnumeratorProperties(request);
         Enumerator enumerator = repository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -237,6 +237,8 @@ public class EnumeratorService {
         enumerator.setIsActive(true);
         enumerator.setStatus(EnumeratorStatus.ACTIVE);
         enumerator.setVerification(VerificationStatus.three);
+        enumerator.setIdCard(request.getIdCard());
+        enumerator.setIdNumber(request.getIdNumber());
         repository.save(enumerator);
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
@@ -258,6 +260,8 @@ public class EnumeratorService {
                 .userEmail(user.getEmail())
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
+                .idCard(enumerator.getIdCard())
+                .idNumber(enumerator.getIdNumber())
                 .build();
 
         auditTrailService
@@ -537,8 +541,8 @@ public class EnumeratorService {
         enumeratorResponse.setLastName(enumerator.getLastName());
         enumeratorResponse.setVerificationStatus(enumerator.getVerificationStatus());
         enumeratorResponse.setEmail(enumerator.getEmail());
-//        enumeratorResponse.setCardImage(enumerator.);
-//        enumeratorResponse.setIdCardNumber(enumerator);
+        enumeratorResponse.setCardImage(enumerator.getIdCard());
+        enumeratorResponse.setIdCardNumber(enumerator.getIdNumber());
         enumeratorResponse.setGender(enumerator.getGender());
         enumeratorResponse.setPhone(enumerator.getPhone());
         enumeratorResponse.setPictureUrl(enumerator.getPictureUrl());
