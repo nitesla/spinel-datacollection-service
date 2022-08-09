@@ -1,8 +1,5 @@
 package com.spinel.datacollection.service.helper;
 
-
-
-
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.enums.EnumeratorVerificationStatus;
 import com.spinel.datacollection.core.enums.Gender;

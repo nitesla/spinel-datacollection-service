@@ -2,10 +2,9 @@ package com.spinel.datacollection.service.repositories;
 
 
 import com.spinel.datacollection.core.models.Transaction;
-import com.sabi.datacollection.core.enums.ActionType;
-import com.sabi.datacollection.core.enums.Status;
-import com.sabi.datacollection.core.enums.TransactionType;
-import com.sabi.datacollection.core.models.Transaction;
+import com.spinel.datacollection.core.enums.ActionType;
+import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
