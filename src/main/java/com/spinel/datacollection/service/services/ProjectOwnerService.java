@@ -1,15 +1,13 @@
 package com.spinel.datacollection.service.services;
 
-
-import com.spinel.datacollection.core.dto.request.CompleteSignupRequest;
-import com.spinel.datacollection.core.dto.request.EnableDisableDto;
-import com.spinel.datacollection.core.dto.request.ProjectOwnerDto;
-import com.spinel.datacollection.core.dto.request.ProjectOwnerSignUpDto;
+import com.sabi.datacollection.core.dto.response.*;
+import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.dto.response.CompleteProjectOwnerSignUpResponse;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerActivationResponse;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerResponseDto;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
 import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.enums.UserCategory;
 import com.spinel.datacollection.core.models.*;
 import com.spinel.datacollection.service.helper.DateFormatter;
@@ -205,7 +203,7 @@ public class ProjectOwnerService {
                 .logEvent(response.getUsername(),
                         "SignUp Project Owner :" + response.getUsername(),
                         AuditTrailFlag.SIGNUP,
-                        " SignUp Project Owner Request for:" + user.getFirstName() + " " + user.getLastName() + " " + user.getEmail()
+                        " SignUp Project Owner Request for:" + user.getFirstName() + " " + user.getLastName()
                         , 1, Utility.getClientIp(request1));
           return response;
     }
@@ -243,6 +241,8 @@ public class ProjectOwnerService {
                 .userEmail(user.getEmail())
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
+                .idCard(projectOwner.getIdCard())
+                .idNumber(projectOwner.getIdNumber())
                 .build();
         return response;
     }
@@ -290,20 +290,32 @@ public class ProjectOwnerService {
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
     }
 
-    public ProjectOwnerResponseDto updateProjectOwner(ProjectOwnerDto request, HttpServletRequest request1) {
+    public ProjectOwnerResponseDto updateProjectOwner(UpdateProjectOwnerDto request, HttpServletRequest request1) {
+        validations.validateUpdateProjectOwner(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested project owner does not exist"));
+        User user = userRepository.findById(projectOwner.getUserId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested user does not exist"));
         mapper.map(request, projectOwner);
         projectOwner.setUpdatedBy(userCurrent.getId());
         projectOwnerRepository.save(projectOwner);
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setUpdatedBy(userCurrent.getId());
+        userRepository.save(user);
+
         log.info("Project owner record updated - {}", projectOwner);
         auditTrailService
                 .logEvent(userCurrent.getUsername(),
-                        "Update Project owner by username:" + userCurrent.getUsername(),
+                        "Update Project owner :" + userCurrent.getUsername(),
                         AuditTrailFlag.UPDATE,
-                        " Update Project owner Request for:" + projectOwner.getId() ,1, Utility.getClientIp(request1));
+                        " Update Project owner Request for:" + projectOwner.getEmail() ,1, Utility.getClientIp(request1));
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
     }
 
@@ -385,7 +397,7 @@ public class ProjectOwnerService {
         int projectsCreated = projectRepository.findByProjectOwnerId(projectOwnerId).size();
         int totalSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), null);
         int projectsInProgress = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.ONGOING).size();
-        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), Status.COMPLETED);
+        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), SubmissionStatus.ACCEPTED);
         int completedProjects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.COMPLETED).size();
         int unSubmittedSurveys = totalSurveys - submittedSurveys;
 
@@ -412,7 +424,7 @@ public class ProjectOwnerService {
         int projectsCreated = projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end).size();
         int totalSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), null);
         int projectsInProgress = projectRepository.findByProjectOwnerIdAndStatusAndCreatedDateBetween(projectOwnerId, Status.ONGOING, start, end).size();
-        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), Status.COMPLETED);
+        int submittedSurveys = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerIdAndCreatedDateBetween(projectOwnerId, start, end), SubmissionStatus.ACCEPTED);
         int completedProjects = projectRepository.findByProjectOwnerIdAndStatusAndCreatedDateBetween(projectOwnerId, Status.COMPLETED, start, end).size();
         int unSubmittedSurveys = totalSurveys - submittedSurveys;
 
@@ -448,5 +460,28 @@ public class ProjectOwnerService {
                 projectOwner.setUserIsActive(user.get().getIsActive());
         }
         return projectOwner;
+    }
+
+    public ProjectOwnerEnumeratorKyc getProjectOwnerKYC(Long id) {
+//        userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        "Requested user Id does not exist!"));
+        ProjectOwner projectOwner = projectOwnerRepository.findProjectOwnerById(id);
+        if(Objects.isNull(projectOwner)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Requested project owner object does not exist");
+        }
+        ProjectOwnerEnumeratorKyc projectOwnerEnumeratorKyc = new ProjectOwnerEnumeratorKyc();
+        projectOwnerEnumeratorKyc.setAddress(projectOwner.getAddress());
+        projectOwnerEnumeratorKyc.setFirstName(projectOwner.getFirstname());
+        projectOwnerEnumeratorKyc.setLastName(projectOwner.getLastname());
+        projectOwnerEnumeratorKyc.setVerificationStatus(projectOwner.getCorporateName());
+        projectOwnerEnumeratorKyc.setEmail(projectOwner.getEmail());
+//        enumeratorResponse.setCardImage(enumerator.);
+//        enumeratorResponse.setIdCardNumber(enumerator);
+        projectOwnerEnumeratorKyc.setAccountManager(projectOwner.getAccountManager());
+        projectOwnerEnumeratorKyc.setCAC(projectOwner.getCAC());
+//        projectOwnerEnumeratorKyc.setO(projectOwner.getOrganisationType());
+        return mapper.map(projectOwnerEnumeratorKyc, ProjectOwnerEnumeratorKyc.class);
     }
 }

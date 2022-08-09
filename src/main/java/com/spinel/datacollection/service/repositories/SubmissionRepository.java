@@ -2,7 +2,7 @@ package com.spinel.datacollection.service.repositories;
 
 
 
-import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.models.Submission;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +30,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findSubmissionByProjectId(Long projectId);
 
-    List<Submission> findSubmissionByProjectIdAndStatus(long projectId, Status status);
+    List<Submission> findSubmissionByProjectIdAndStatus(long projectId, SubmissionStatus status);
 
     List<Submission> findSubmissionBySubmissionDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 
@@ -41,7 +41,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             " AND ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND s.enumeratorId = :enumeratorId)) order by s.id desc")
     Page<Submission> findSubmissions(@Param("projectId") Long projectId,
                                      @Param("formId") Long formId,
-                                     @Param("status") Status status,
+                                     @Param("status") SubmissionStatus status,
                                      @Param("enumeratorId") Long enumeratorId,
                                      Pageable pageable);
 

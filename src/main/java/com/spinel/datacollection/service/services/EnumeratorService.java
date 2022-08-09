@@ -11,6 +11,7 @@ import com.spinel.datacollection.core.dto.response.*;
 import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Enumerator;
 import com.spinel.datacollection.core.models.LGA;
+import com.spinel.datacollection.service.helper.DateEnum;
 import com.spinel.datacollection.service.helper.DateFormatter;
 import com.spinel.datacollection.service.helper.Validations;
 
@@ -83,6 +84,7 @@ public class EnumeratorService {
     private final CountryRepository countryRepository;
     private final ProjectRoleRepository projectRoleRepository;
     private final SubmissionService submissionService;
+    private final ProjectEnumeratorRepository projectEnumeratorRepository;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
@@ -90,7 +92,7 @@ public class EnumeratorService {
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
                              StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService,
-                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository, SubmissionService submissionService) {
+                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository, SubmissionService submissionService, ProjectEnumeratorRepository projectEnumeratorRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -106,6 +108,7 @@ public class EnumeratorService {
         this.countryRepository = countryRepository;
         this.projectRoleRepository = projectRoleRepository;
         this.submissionService = submissionService;
+        this.projectEnumeratorRepository = projectEnumeratorRepository;
     }
 
 
@@ -225,8 +228,8 @@ public class EnumeratorService {
         return response;
     }
 
-
     public CompleteSignUpResponse completeSignUp(CompleteSignupRequest request, HttpServletRequest request1) {
+        request.setVerificationStatus(String.valueOf(EnumeratorVerificationStatus.VERIFIED));
         validations.validateEnumeratorProperties(request);
         Enumerator enumerator = repository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -237,6 +240,8 @@ public class EnumeratorService {
         enumerator.setIsActive(true);
         enumerator.setStatus(EnumeratorStatus.ACTIVE);
         enumerator.setVerification(VerificationStatus.three);
+        enumerator.setIdCard(request.getIdCard());
+        enumerator.setIdNumber(request.getIdNumber());
         repository.save(enumerator);
         log.debug("complete signup  - {}"+ new Gson().toJson(enumerator));
 
@@ -258,6 +263,8 @@ public class EnumeratorService {
                 .userEmail(user.getEmail())
                 .userName(user.getUsername())
                 .userPhone(user.getPhone())
+                .idCard(enumerator.getIdCard())
+                .idNumber(enumerator.getIdNumber())
                 .build();
 
         auditTrailService
@@ -422,7 +429,7 @@ public class EnumeratorService {
 
         int activeProjects = projectEnumeratorService.getEnumeratorProject(enumeratorId).size();
         int submittedSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProject(enumeratorId),
-                Status.COMPLETED);
+                SubmissionStatus.ACCEPTED);
         int assignedTasks = 0;
         int pendindTasks = 0;
         int taskInProgress = 0;
@@ -454,11 +461,12 @@ public class EnumeratorService {
 
         int activeProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end).size();
         int submittedSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end),
-                Status.COMPLETED);
+                SubmissionStatus.ACCEPTED);
         int assignedTasks = 0;
         int pendindTasks = 0;
         int taskInProgress = 0;
-        int inCompleteSurveys = 0;
+        int inCompleteSurveys = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, start, end),
+                SubmissionStatus.INREVIEW);;
         int activeLocations = 0;
         int amountEarned = 0;
 
@@ -472,6 +480,45 @@ public class EnumeratorService {
             put("activeLocations", activeLocations);
             put("amountEarned", amountEarned);
         }};
+    }
+
+    private HashMap<String, Integer> enumeratorProjectSummary(long enumeratorId, LocalDateTime startDate, LocalDateTime endDate) {
+        repository.findById(enumeratorId)
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested enumerator properties Id does not exist!"));
+
+        int totalProjects = projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, startDate, endDate).size();
+        int projectsInProgress = projectEnumeratorRepository.findProjectEnumeratorsWithProjectStatus(enumeratorId, Status.ONGOING.toString(), startDate, endDate).size();
+        int pendingProjects = projectEnumeratorRepository.findProjectEnumeratorsWithProjectStatus(enumeratorId, Status.DRAFT.toString(), startDate, endDate).size();
+        int totalSurvey = submissionService.getSurveysForProjectEnumerator(projectEnumeratorService.getEnumeratorProjectWithDate(enumeratorId, startDate, endDate), null);
+
+        return new HashMap<String, Integer>() {{
+            put("totalProjects", totalProjects);
+            put("projectsInProgress", projectsInProgress);
+            put("pendingProjects", pendingProjects);
+            put("totalSurvey", totalSurvey);
+        }};
+    }
+
+
+    public HashMap<String, Integer> enumeratorProjectSummary(Long enumeratorId, int length, String dateType) {
+        DateEnum.validateDateEnum(dateType);
+        LocalDateTime startDate = LocalDateTime.now();
+        HashMap<String, Integer> submissions = null;
+
+        if(DateEnum.MONTH.getValue().equals(dateType)) {
+            LocalDateTime endDate = startDate.minusMonths(length);
+            submissions = enumeratorProjectSummary(enumeratorId, startDate, endDate);
+        }
+        if(DateEnum.WEEK.getValue().equals(dateType)) {
+            LocalDateTime endDate = startDate.minusDays(length*7);
+            submissions = enumeratorProjectSummary(enumeratorId, startDate, endDate);
+        }
+        if(DateEnum.DAY.getValue().equals(dateType)) {
+            LocalDateTime endDate = startDate.minusDays(length);
+            submissions = enumeratorProjectSummary(enumeratorId, startDate, endDate);
+        }
+        return submissions;
     }
 
     private Enumerator setTransientFields(Enumerator enumeratorProperties) {
@@ -537,8 +584,8 @@ public class EnumeratorService {
         enumeratorResponse.setLastName(enumerator.getLastName());
         enumeratorResponse.setVerificationStatus(enumerator.getVerificationStatus());
         enumeratorResponse.setEmail(enumerator.getEmail());
-//        enumeratorResponse.setCardImage(enumerator.);
-//        enumeratorResponse.setIdCardNumber(enumerator);
+        enumeratorResponse.setCardImage(enumerator.getIdCard());
+        enumeratorResponse.setIdCardNumber(enumerator.getIdNumber());
         enumeratorResponse.setGender(enumerator.getGender());
         enumeratorResponse.setPhone(enumerator.getPhone());
         enumeratorResponse.setPictureUrl(enumerator.getPictureUrl());

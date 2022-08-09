@@ -1,10 +1,11 @@
 package com.spinel.datacollection.service.helper;
 
+
+
+
+import com.sabi.datacollection.core.dto.request.JobRequestDto;
 import com.spinel.datacollection.core.dto.request.*;
-import com.spinel.datacollection.core.enums.EnumeratorVerificationStatus;
-import com.spinel.datacollection.core.enums.Gender;
-import com.spinel.datacollection.core.enums.Location;
-import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Country;
 import com.spinel.datacollection.core.models.LGA;
 import com.spinel.datacollection.core.models.ProjectOwner;
@@ -634,11 +635,34 @@ public class Validations {
         }
     }
 
+    public void validateSubmissionStatus(String status) {
+        if(!Arrays.stream(SubmissionStatus.values()).anyMatch((t) -> t.name().equals(status))){
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid value for status!");
+        }
+    }
+
     public void validateProjectRole(ProjectRoleDto request) {
         if (request.getName() == null || request.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
+    public void validateuserBank(UserBankRequestDto request) {
+        bankRepository
+                .findById(request.getBankId()).orElseThrow(() ->
+                new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Bank not found"));
+        userRepository
+                .findById(request.getUserId()).orElseThrow(()->
+                        new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "User not found"));
+    }
+
+    public void validateJobRequest(JobRequestDto request) {
+        userRepository
+                .findById(request.getUserId()).orElseThrow(()->
+                        new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "User not found"));
+        projectRepository
+                .findById(request.getProjectId()).orElseThrow(() ->
+                        new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Project not found"));
+    }
 }
 
 

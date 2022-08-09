@@ -54,4 +54,19 @@ public interface ProjectEnumeratorRepository extends JpaRepository<ProjectEnumer
 //                                                   @Param("projectId") LocalDateTime assignedDate,
 //                                                   @Param("completedDate") LocalDateTime completedDate,
 //                                                   @Param("status") Status status, Pageable pageable);
+
+    @Query(value = "SELECT ProjectEnumerator.* FROM ProjectEnumerator, Project WHERE " +
+            "ProjectEnumerator.projectId=Project.id " +
+            "AND ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND ProjectEnumerator.enumeratorId = :enumeratorId)) " +
+            "AND ((:status IS NULL ) OR (:status IS NOT NULL AND Project.status = :status)) " +
+            "AND ((:startDate IS NULL) AND (:endDate IS NULL) OR (ProjectEnumerator.createdDate BETWEEN :startDate AND :endDate))", nativeQuery = true)
+    List<ProjectEnumerator> findProjectEnumeratorsWithProjectStatus(Long enumeratorId, String status, LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query(value = "SELECT ProjectEnumerator.* FROM Enumerator, ProjectEnumerator WHERE " +
+            "ProjectEnumerator.enumeratorId=Enumerator.id " +
+            "AND ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND ProjectEnumerator.enumeratorId = :enumeratorId)) " +
+            "AND ((:projectId IS NULL ) OR (:projectId IS NOT NULL AND ProjectEnumerator.projectId = :projectId)) " +
+            "AND ((:name IS NULL) OR (CONCAT(Enumerator.firstName, \" \" ,Enumerator.lastName) LIKE %:name%) " +
+            "OR (CONCAT(Enumerator.lastName, \" \" ,Enumerator.firstName) LIKE %:name%))", nativeQuery = true)
+    Page<ProjectEnumerator> findProjectEnumerators(Long projectId,Long enumeratorId,String name,Pageable pageable);
 }

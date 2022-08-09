@@ -236,7 +236,6 @@ public class ProjectEnumeratorService {
                 projectEnumerator.setPicture(enumerator.get().getPictureUrl());
                 projectEnumerator.setFirstName(enumerator.get().getFirstName());
                 projectEnumerator.setLastName(enumerator.get().getLastName());
-                projectEnumerator.setVerification(enumerator.get().getVerification());
             }
         }
 
