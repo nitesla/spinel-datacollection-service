@@ -131,6 +131,7 @@ public class EnumeratorService {
                   .phone(exist.getPhone())
                   .username(exist.getUsername())
                   .enumeratorId(enumeratorExist.getId())
+                        .userBankId(enumeratorExist.getUserBankId())
                   .build();
           return enumeratorSignUpResponseDto;
             }else {
@@ -175,6 +176,7 @@ public class EnumeratorService {
         saveEnumerator.setCorp(request.getIsCorp());
         saveEnumerator.setStatus(EnumeratorStatus.PENDING);
         saveEnumerator.setVerification(VerificationStatus.one);
+        saveEnumerator.setUserBankId(request.getUserBankId());
         if (request.getIsCorp() == true){
             saveEnumerator.setCorporateName(request.getCorporateName());
         }
@@ -190,6 +192,7 @@ public class EnumeratorService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
+                .userBankId(enumeratorResponse.getUserBankId())
                 .corporateName(enumeratorResponse.getCorporateName())
                 .enumeratorId(enumeratorResponse.getId())
                 .build();

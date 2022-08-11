@@ -106,6 +106,7 @@ public class ProjectOwnerService {
                         .username(userExists.getUsername())
                         .projectOwnerId(projectOwnerExists.getId())
                         .corporateName(projectOwnerExists.getCorporateName())
+                        .userBankId(projectOwnerExists.getUserBankId())
                         .build();
                 return projectOwnerSignUpResponseDto;
             } else {
@@ -146,6 +147,7 @@ public class ProjectOwnerService {
         saveProjectOwner.setIsActive(false);
         saveProjectOwner.setCreatedBy(user.getId());
         saveProjectOwner.setIsCorp(request.getIsCorp());
+        saveProjectOwner.setUserBankId(request.getUserBankId());
         if(request.getIsCorp() == true) {
             saveProjectOwner.setCorporateName(request.getCorporateName());
         }
@@ -166,6 +168,7 @@ public class ProjectOwnerService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .corporateName(projectOwner.getCorporateName())
+                .userBankId(projectOwner.getUserBankId())
                 .username(user.getUsername())
                 .build();
 
