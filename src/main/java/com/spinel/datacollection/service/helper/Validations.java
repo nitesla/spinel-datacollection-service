@@ -338,6 +338,48 @@ public class Validations {
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
     }
 
+    public void validateCreateProjectOwner(ProjectOwnerDto projectOwnerDto) {
+        ProjectOwner projectOwnerEmail = projectOwnerRepository.findProjectOwnerByEmail(projectOwnerDto.getEmail());
+        if (projectOwnerEmail != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with email already exists");
+
+        ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(projectOwnerDto.getPhone());
+        if (projectOwnerPhone != null )
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
+        organisationTypeRepository.findById(projectOwnerDto.getOrganisationTypeId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested organisation type Id does not exist!"));
+        lgaRepository.findById(projectOwnerDto.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested lga Id does not exist!"));
+
+
+        if (projectOwnerDto.getIsCorp() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is Corp cannot be empty");
+        if (projectOwnerDto.getIsCorp() == false && (projectOwnerDto.getFirstname() == null || projectOwnerDto.getFirstname().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "First name cannot be empty");
+        if (projectOwnerDto.getIsCorp() == false && (projectOwnerDto.getFirstname().length() < 2 || projectOwnerDto.getFirstname().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid first name  length");
+        if (projectOwnerDto.getIsCorp() == false && (projectOwnerDto.getLastname() == null || projectOwnerDto.getLastname().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Last name cannot be empty");
+        if (projectOwnerDto.getIsCorp() == false && (projectOwnerDto.getLastname().length() < 2 || projectOwnerDto.getLastname().length() > 100))// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid last name  length");
+
+        if (projectOwnerDto.getEmail() == null || projectOwnerDto.getEmail().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
+        if (!Utility.validEmail(projectOwnerDto.getEmail().trim()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid Email Address");
+        if (projectOwnerDto.getPhone() == null || projectOwnerDto.getPhone().isEmpty())
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Phone number cannot be empty");
+        if (projectOwnerDto.getPhone().length() < 8 || projectOwnerDto.getPhone().length() > 14)// NAME LENGTH*********
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid phone number  length");
+        if (!Utility.isNumeric(projectOwnerDto.getPhone()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
+        if (projectOwnerDto.getIsCorp() == true && (projectOwnerDto.getCorporateName() == null || projectOwnerDto.getCorporateName().isEmpty()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
+
+    }
+
     public void validateUpdateProjectOwner(UpdateProjectOwnerDto request) {
         projectCategoryRepository.findById(request.getProjectCategoryId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,

@@ -15,8 +15,12 @@ import com.spinel.datacollection.service.helper.Validations;
 
 
 import com.spinel.datacollection.service.repositories.*;
+import com.spinel.framework.dto.requestDto.ActivateUserAccountDto;
 import com.spinel.framework.dto.requestDto.ChangePasswordDto;
 import com.spinel.framework.dto.requestDto.ForgetPasswordDto;
+import com.spinel.framework.dto.requestDto.PasswordActivationRequest;
+import com.spinel.framework.dto.responseDto.ActivateUserResponse;
+import com.spinel.framework.dto.responseDto.UserActivationResponse;
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
@@ -279,17 +283,82 @@ public class ProjectOwnerService {
         return response;
     }
 
-    public ProjectOwnerResponseDto createProjectOwner(ProjectOwnerDto request) {
+    public ProjectOwnerResponseDto createProjectOwner(ProjectOwnerDto request, HttpServletRequest request1) {
+        validations.validateCreateProjectOwner(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
+        User user = mapper.map(request, User.class);
+        User userExists = userRepository.findByEmailOrPhone(request.getEmail(), request.getPhone());
+        if(userExists != null && userExists.getPasswordChangedOn() == null) {
+            ProjectOwner projectOwnerExists = projectOwnerRepository.findByUserId(userExists.getId());
+            if (projectOwnerExists != null) {
+                ProjectOwnerResponseDto projectOwnerResponseDto = ProjectOwnerResponseDto.builder()
+                        .id(userExists.getId())
+                        .email(userExists.getEmail())
+                        .firstname(userExists.getFirstName())
+                        .lastname(userExists.getLastName())
+                        .phone(userExists.getPhone())
+                        .corporateName(projectOwnerExists.getCorporateName())
+                        .build();
+                return projectOwnerResponseDto;
+            } else {
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project Owner Id does not  match");
+            }
+        } else if (userExists != null && userExists.getPasswordChangedOn() != null) {
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project Owner already exists");
+        }
         ProjectOwner projectOwner = mapper.map(request, ProjectOwner.class);
         ProjectOwner projectOwnerExists = projectOwnerRepository.findProjectOwnerById(request.getId());
         if (projectOwnerExists != null) {
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner already exists");
         }
+
+        user.setUserCategory(UserCategory.PROJECT_OWNER.toString());
+        user.setUsername(request.getEmail());
+        user.setLoginAttempts(0);
+        user.setResetToken(Utility.registrationCode("HHmmss"));
+        user.setResetTokenExpirationDate(Utility.tokenExpiration());
+        user.setCreatedBy(0l);
+        user.setIsActive(false);
+        user = userRepository.save(user);
+        log.info("Created new project owner user - {}", user);
+
+        UserRole userRole = UserRole.builder()
+                .userId(user.getId())
+                .roleId(user.getRoleId())
+                .build();
+        userRoleRepository.save(userRole);
+
+        PreviousPasswords previousPasswords = PreviousPasswords.builder()
+                .userId(user.getId())
+                .password(user.getPassword())
+                .createdDate(LocalDateTime.now())
+                .build();
+        previousPasswordRepository.save(previousPasswords);
+
+
         projectOwner.setCreatedBy(userCurrent.getId());
-        projectOwner.setIsActive(true);
+        projectOwner.setIsActive(false);
+        projectOwner.setUserId(user.getId());
         projectOwnerRepository.save(projectOwner);
         log.info("Created new Project owner - {}", projectOwner);
+
+        // --------  sending token  -----------
+
+        NotificationRequestDto notificationRequestDto = new NotificationRequestDto();
+        User emailRecipient = userRepository.getOne(user.getId());
+        notificationRequestDto.setMessage("Activation Otp " + " " + user.getResetToken());
+        List<RecipientRequest> recipient = new ArrayList<>();
+        recipient.add(RecipientRequest.builder()
+                .email(emailRecipient.getEmail())
+                .build());
+        notificationRequestDto.setRecipient(recipient);
+        notificationService.emailNotificationRequest(notificationRequestDto);
+        auditTrailService
+                .logEvent(user.getUsername(),
+                        "Create Project Owner :" + user.getUsername(),
+                        AuditTrailFlag.SIGNUP,
+                        " SignUp Project Owner Request for:" + user.getFirstName() + " " + user.getLastName()
+                        , 1, Utility.getClientIp(request1));
         return mapper.map(projectOwner, ProjectOwnerResponseDto.class);
     }
 
@@ -390,6 +459,31 @@ public class ProjectOwnerService {
 
     public void forgetPassword (ForgetPasswordDto request) {
         userService.forgetPassword(request);
+    }
+
+    public ActivateUserResponse validateOtpAndActivateUser(ActivateUserAccountDto request) {
+        return userService.activateUser(request);
+    }
+
+    public UserActivationResponse accountActivation(PasswordActivationRequest request) {
+        ProjectOwner projectOwner = projectOwnerRepository.findByUserId(request.getId());
+        User user = userRepository.findById(request.getId()).get();
+        if(Objects.nonNull(user.getLastLogin())) {
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,
+                    "User account is already active");
+        }
+        if(Objects.isNull(projectOwner)) {
+            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                    "Project owner does not exist for this user Id");
+        }
+        if(projectOwner.getIsActive()){
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,
+                    "Project Owner account is already active");
+        }
+
+        projectOwner.setIsActive(true);
+        projectOwnerRepository.save(projectOwner);
+        return userService.userPasswordActivation(request);
     }
 
     public HashMap<String, Integer> getProjectSummary(Long projectOwnerId) {
