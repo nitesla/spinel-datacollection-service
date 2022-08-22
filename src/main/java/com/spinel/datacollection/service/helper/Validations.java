@@ -306,16 +306,34 @@ public class Validations {
         User userEmail = userRepository.findByEmail(projectOwnerSignUp.getEmail());
         if (userEmail != null )
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "User with email already exists");
+
+        sectorRepository.findById(projectOwnerSignUp.getSectorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Sector Id does not exist!"));
     }
 
-    public void validateProjectOwnerCompleteSignUp(CompleteSignupRequest completeSignupRequest) {
-        ProjectOwner projectOwnerEmail = projectOwnerRepository.findProjectOwnerByEmail(completeSignupRequest.getEmail());
+    public void validateProjectOwnerCompleteSignUp(CompleteSignupProjectOwnerRequest request) {
+        ProjectOwner projectOwnerEmail = projectOwnerRepository.findProjectOwnerByEmail(request.getEmail());
         if (projectOwnerEmail != null )
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with email already exists");
 
-        ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(completeSignupRequest.getPhone());
+        ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(request.getPhone());
         if (projectOwnerPhone != null )
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
+
+        countryRepository.findById(request.getCountryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Country Id does not exist!"));
+        stateRepository.findById(request.getStateId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested State Id does not exist!"));
+        lgaRepository.findById(request.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested LGA Id does not exist!"));
+
+        sectorRepository.findById(request.getSectorId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Sector Id does not exist!"));
     }
 
     public void validateCreateProjectOwner(ProjectOwnerDto projectOwnerDto) {
@@ -326,9 +344,9 @@ public class Validations {
         ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(projectOwnerDto.getPhone());
         if (projectOwnerPhone != null )
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project owner with Phone number already exists");
-        organisationTypeRepository.findById(projectOwnerDto.getOrganisationTypeId())
+        sectorRepository.findById(projectOwnerDto.getSectorId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested organisation type Id does not exist!"));
+                        "Requested Sector Id does not exist!"));
         lgaRepository.findById(projectOwnerDto.getLgaId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested lga Id does not exist!"));
@@ -361,19 +379,43 @@ public class Validations {
     }
 
     public void validateUpdateProjectOwner(UpdateProjectOwnerDto request) {
-        projectCategoryRepository.findById(request.getProjectCategoryId())
+        sectorRepository.findById(request.getSectorId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested Project Category  Id does not exist!"));
+                        "Requested Sector Id does not exist!"));
+
         if (request.getEmail() == null || request.getEmail().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "email cannot be empty");
-        if (request.getFirstName() == null || request.getFirstName().isEmpty())
+        if (request.getFirstname() == null || request.getFirstname().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "firstname cannot be empty");
-        if (request.getLastName() == null || request.getLastName().isEmpty())
+        if (!Utility.validateName(request.getFirstname()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for First Name ");
+        if (request.getLastname() == null || request.getLastname().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "lastname cannot be empty");
+        if (!Utility.validateName(request.getLastname()))
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for Last Name ");
         if (request.getPhone() == null || request.getPhone().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "phone cannot be empty");
         if (Objects.nonNull(request.getGender()) && !EnumUtils.isValidEnum(Gender.class, request.getGender().toUpperCase()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for gender: MALE/FEMALE/OTHERS");
+        countryRepository.findById(request.getCountryId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested Country Id does not exist!"));
+        stateRepository.findById(request.getStateId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested State Id does not exist!"));
+        lgaRepository.findById(request.getLgaId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        "Requested LGA Id does not exist!"));
+
+
+        ProjectOwner projectOwnerPhone = projectOwnerRepository.findProjectOwnerByPhone(request.getPhone());
+        if(Objects.nonNull(projectOwnerPhone) && projectOwnerPhone.getId() != request.getId())
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project Owner with Phone number already exists");
+
+        ProjectOwner projectOwnerEmail = projectOwnerRepository.findProjectOwnerByEmail(request.getEmail());
+        if(Objects.nonNull(projectOwnerEmail) && projectOwnerEmail.getId() != request.getId())
+                throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project Owner with email already exists");
+
     }
 
     public void validateProjectCategory(ProjectCategoryDto projectCategoryDto) {

@@ -61,7 +61,7 @@ public class ProjectOwnerService {
 
 
     private final ProjectOwnerUserRepository projectOwnerUserRepository;
-    private final OrganisationTypeRepository organisationTypeRepository;
+    private final SectorRepository sectorRepository;
     private final LGARepository lgaRepository;
     private final AuditTrailService auditTrailService;
     private final PasswordEncoder passwordEncoder;
@@ -75,11 +75,11 @@ public class ProjectOwnerService {
     private final UserService userService;
     private final SubmissionService submissionService;
 
-    public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, OrganisationTypeRepository organisationTypeRepository, LGARepository lgaRepository,
+    public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, SectorRepository sectorRepository, LGARepository lgaRepository,
                                AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
                                ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService, SubmissionService submissionService) {
         this.projectOwnerUserRepository = projectOwnerUserRepository;
-        this.organisationTypeRepository = organisationTypeRepository;
+        this.sectorRepository = sectorRepository;
         this.lgaRepository = lgaRepository;
         this.auditTrailService = auditTrailService;
         this.passwordEncoder = passwordEncoder;
@@ -108,7 +108,7 @@ public class ProjectOwnerService {
                         .lastName(userExists.getLastName())
                         .phone(userExists.getPhone())
                         .username(userExists.getUsername())
-                        .projectOwnerId(projectOwnerExists.getId())
+                        .sectorId(projectOwnerExists.getSectorId())
                         .corporateName(projectOwnerExists.getCorporateName())
                         .build();
                 return projectOwnerSignUpResponseDto;
@@ -164,7 +164,7 @@ public class ProjectOwnerService {
 
         ProjectOwnerSignUpResponseDto response = ProjectOwnerSignUpResponseDto.builder()
                 .id(user.getId())
-                .projectOwnerId(projectOwner.getId())
+                .sectorId(request.getSectorId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
@@ -212,7 +212,7 @@ public class ProjectOwnerService {
           return response;
     }
 
-    public CompleteProjectOwnerSignUpResponse completeSignUp(CompleteSignupRequest request){
+    public CompleteProjectOwnerSignUpResponse completeSignUp(CompleteSignupProjectOwnerRequest request){
        validations.validateProjectOwnerCompleteSignUp(request);
        ProjectOwner projectOwner = projectOwnerRepository.findById(request.getId())
                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -368,14 +368,23 @@ public class ProjectOwnerService {
                         "Requested user does not exist"));
         mapper.map(request, projectOwner);
         projectOwner.setUpdatedBy(userCurrent.getId());
-        projectOwnerRepository.save(projectOwner);
 
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
+
+        User userEmail = userRepository.findByEmail(request.getEmail());
+        if(Objects.nonNull(userEmail) && userEmail.getId() != projectOwner.getUserId())
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "User with Email already exists");
+
+        User userPhone = userRepository.findByPhone(request.getPhone());
+        if(Objects.nonNull(userPhone) && userPhone.getId() != projectOwner.getUserId())
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "User with Phone already exists");
+        user.setFirstName(request.getFirstname());
+        user.setLastName(request.getLastname());
         user.setEmail(request.getEmail());
+        user.setUsername(request.getEmail());
         user.setPhone(request.getPhone());
         user.setUpdatedBy(userCurrent.getId());
         userRepository.save(user);
+        projectOwnerRepository.save(projectOwner);
 
         log.info("Project owner record updated - {}", projectOwner);
         auditTrailService
@@ -536,10 +545,10 @@ public class ProjectOwnerService {
             if(lga.isPresent())
                 projectOwner.setLga(lga.get().getName());
         }
-        if(projectOwner.getOrganisationTypeId() != null){
-            Optional<OrganisationType> organisationType = organisationTypeRepository.findById(projectOwner.getOrganisationTypeId());
-            if(organisationType.isPresent())
-                projectOwner.setOrganisationType(organisationType.get().getName());
+        if(projectOwner.getSectorId() != null){
+            Optional<Sector> sector = sectorRepository.findById(projectOwner.getSectorId());
+            if(sector.isPresent())
+                projectOwner.setSector(sector.get().getName());
         }
         if(projectOwner.getId() != null) {
             List<Project> projects = projectRepository.findByProjectOwnerId(projectOwner.getId());
