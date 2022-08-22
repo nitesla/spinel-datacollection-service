@@ -3,6 +3,7 @@ package com.spinel.datacollection.service.helper;
 
 
 
+import com.sabi.datacollection.core.dto.request.JobRequestDto;
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Country;
@@ -49,7 +50,8 @@ public class Validations {
     private final DataSetRepository dataSetRepository;
     private final DataUserRepository dataUserRepository;
     private final ProjectRoleRepository projectRoleRepository;
-//    private final projectW
+    private final DataWalletRepository walletRepository;
+    private final UserBankRepository userBankRepository;
 
     //private final FormRepository formRepository;
 
@@ -73,6 +75,9 @@ public class Validations {
 
     @Autowired
     private CommentDictionaryRepository commentDictionaryRepository;
+
+    @Autowired
+    private BankRepository bankRepository;
 
 //    @Autowired
 //    private FormRepository formRepository;
@@ -120,7 +125,7 @@ public class Validations {
     }
 
 
-    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository) {
+    public Validations(RoleRepository roleRepository, CountryRepository countryRepository, StateRepository stateRepository, LGARepository lgaRepository, UserRepository userRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, SectorRepository sectorRepository, IndicatorDictionaryRepository indicatorDictionaryRepository, DataSetRepository dataSetRepository, DataUserRepository dataUserRepository, ProjectRoleRepository projectRoleRepository, DataWalletRepository walletRepository, UserBankRepository userBankRepository) {
         this.roleRepository = roleRepository;
         this.countryRepository = countryRepository;
         this.stateRepository = stateRepository;
@@ -133,6 +138,8 @@ public class Validations {
         this.dataSetRepository = dataSetRepository;
         this.dataUserRepository = dataUserRepository;
         this.projectRoleRepository = projectRoleRepository;
+        this.walletRepository = walletRepository;
+        this.userBankRepository = userBankRepository;
     }
 
     public void validateState(StateDto stateDto) {
@@ -205,6 +212,10 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (enumerator.getIsCorp() == true && (enumerator.getCorporateName() == null || enumerator.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+        if (enumerator.getUserBankId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"The UserBankId cannot be missing");
+        userBankRepository.findById(enumerator.getUserBankId())
+                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
 
         organisationTypeRepository.findById(enumerator.getOrganisationTypeId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
@@ -255,6 +266,11 @@ public class Validations {
 
         if (enumeratorPropertiesDto.getAddress() == null || enumeratorPropertiesDto.getAddress().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Address cannot be empty");
+        if (enumeratorPropertiesDto.getUserBankId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "The userBankId cannot be null");
+        userBankRepository.findById(enumeratorPropertiesDto.getUserBankId())
+                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
+
         LGA lga = lgaRepository.findById(enumeratorPropertiesDto.getLgaId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid LGA id!"));
@@ -298,6 +314,10 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (projectOwnerSignUp.getIsCorp() == true && (projectOwnerSignUp.getCorporateName() == null || projectOwnerSignUp.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
+        if (projectOwnerSignUp.getUserBankId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "UserBankId cannot be null");
+        userBankRepository.findById(projectOwnerSignUp.getUserBankId())
+                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
 
         User userPhone = userRepository.findByPhone(projectOwnerSignUp.getPhone());
         if (userPhone != null )
@@ -661,14 +681,30 @@ public class Validations {
     }
 
     public void validateTransaction(TransactionDto request) {
+        if (request.getHash() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "hash field cannot be empty");
+
         if (request.getWalletId() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "walletId cannot be empty");
         if (request.getAmount() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "amount cannot be empty");
-
-//        walletRepository.findById(request.getWalletId())
-//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-//                        " Enter a valid Wallet Id!"));
+        if (request.getInitialBalance() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "initBalance cannot be empty");
+        if (request.getFinalBalance() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "finalBalance cannot be empty");
+        if (request.getSenderId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "senderId cannot be empty");
+        if (request.getReceiverId() == null)
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "receiverId cannot be empty");
+        walletRepository.findById(request.getWalletId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Wallet Id!"));
+        userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid valid Sender Id!"));
+        userRepository.findById(request.getReceiverId())
+                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                        " Enter a valid Receiver Id!"));
     }
 
     public void validateBank(BankDto bankDto) {
@@ -730,6 +766,23 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
     }
 
+    public void validateuserBank(UserBankRequestDto request) {
+        bankRepository
+                .findById(request.getBankId()).orElseThrow(() ->
+                new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Bank not found"));
+        userRepository
+                .findById(request.getUserId()).orElseThrow(()->
+                new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "User not found"));
+    }
+
+    public void validateJobRequest(JobRequestDto request) {
+        userRepository
+                .findById(request.getUserId()).orElseThrow(()->
+                new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "User not found"));
+        projectRepository
+                .findById(request.getProjectId()).orElseThrow(() ->
+                new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Project not found"));
+    }
 }
 
 

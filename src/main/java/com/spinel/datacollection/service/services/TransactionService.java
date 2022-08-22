@@ -5,10 +5,14 @@ import com.google.gson.Gson;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.TransactionDto;
 import com.spinel.datacollection.core.dto.response.TransactionResponseDto;
+import com.spinel.datacollection.core.enums.ActionType;
+import com.spinel.datacollection.core.enums.Status;
+import com.spinel.datacollection.core.enums.TransactionType;
 import com.spinel.datacollection.core.models.Transaction;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.TransactionRepository;
-
+import com.spinel.framework.exceptions.BadRequestException;
+import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
 import com.spinel.framework.models.User;
 import com.spinel.framework.service.TokenService;
@@ -18,9 +22,12 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -59,10 +66,10 @@ public class TransactionService {
         validations.validateTransaction(request);
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Transaction transaction = mapper.map(request,Transaction.class);
-//        Transaction transactionExist = transactionRepository.findByName(request.getName());
-//        if(transactionExist !=null){
-//            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Transaction already exist");
-//        }
+        Transaction transactionExist = transactionRepository.findByHash(request.getHash());
+        if(transactionExist !=null){
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Transaction already exist");
+        }
         transaction.setReference(validations.generateReferenceNumber(10));
         transaction.setCreatedBy(userCurrent.getId());
         transaction.setIsActive(true);
@@ -80,6 +87,8 @@ public class TransactionService {
 
     public TransactionResponseDto updateTransaction(TransactionDto request) {
         validations.validateTransaction(request);
+        if (request.getId() == null)
+            throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION,"The Id cannot be null");
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         Transaction transaction = transactionRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
@@ -101,7 +110,6 @@ public class TransactionService {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Transaction Id does not exist!"));
-
         return mapper.map(transaction,TransactionResponseDto.class);
     }
 
@@ -111,8 +119,27 @@ public class TransactionService {
      * </summary>
      * <remarks>this method is responsible for getting all records in pagination</remarks>
      */
-    public Page<Transaction> findAll(Long walletId, BigDecimal amount, String reference,  PageRequest pageRequest ){
-        Page<Transaction> transaction = transactionRepository.findTransactions(walletId, amount, reference, pageRequest);
+    public Page<Transaction> findAll(Long walletId,
+                                     BigDecimal amount,
+                                     BigDecimal initialBalance,
+                                     BigDecimal finalBalance,
+                                     ActionType actionType,
+                                     TransactionType transactionType,
+                                     Status status,
+                                     String reference,
+                                     LocalDateTime fromDate,
+                                     LocalDateTime toDate,
+                                     PageRequest pageRequest ){
+        if (fromDate!=null){
+            if (toDate!=null && fromDate.isAfter(toDate))
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+             }
+        if (toDate!=null){
+            if (fromDate == null)
+                throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+        }
+        Page<Transaction> transaction = transactionRepository.findTransactions(walletId,
+                amount, initialBalance,finalBalance,actionType,transactionType,status, reference,fromDate,toDate, pageRequest);
             if(transaction == null){
                 throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
             }
