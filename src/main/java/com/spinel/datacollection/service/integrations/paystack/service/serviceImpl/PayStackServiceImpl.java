@@ -58,7 +58,9 @@ public class PayStackServiceImpl implements PayStackService {
 
     @Override
     public PayStackResponse listTransaction(int perPage, int page, String from, String to, String status, String customer) {
-        PayStackTransactionStatus.isValidPayStackTransactionStatus(status);
+        if(Objects.nonNull(status)) {
+            PayStackTransactionStatus.isValidPayStackTransactionStatus(status);
+        }
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(listTransactionUrl)
                 .queryParam("perPage", perPage)
                 .queryParam("page", page)

@@ -212,10 +212,10 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (enumerator.getIsCorp() == true && (enumerator.getCorporateName() == null || enumerator.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
-        if (enumerator.getUserBankId() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"The UserBankId cannot be missing");
-        userBankRepository.findById(enumerator.getUserBankId())
-                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
+//        if (enumerator.getUserBankId() == null)
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"The UserBankId cannot be missing");
+//        userBankRepository.findById(enumerator.getUserBankId())
+//                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
 
         organisationTypeRepository.findById(enumerator.getOrganisationTypeId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid Organisation type id!"));
@@ -314,10 +314,10 @@ public class Validations {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Invalid data type for phone number ");
         if (projectOwnerSignUp.getIsCorp() == true && (projectOwnerSignUp.getCorporateName() == null || projectOwnerSignUp.getCorporateName().isEmpty()))
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Co operate Name cannot be empty");
-        if (projectOwnerSignUp.getUserBankId() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "UserBankId cannot be null");
-        userBankRepository.findById(projectOwnerSignUp.getUserBankId())
-                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
+//        if (projectOwnerSignUp.getUserBankId() == null)
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "UserBankId cannot be null");
+//        userBankRepository.findById(projectOwnerSignUp.getUserBankId())
+//                .orElseThrow(()-> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,"The given UserBankId doesn't exist"));
 
         User userPhone = userRepository.findByPhone(projectOwnerSignUp.getPhone());
         if (userPhone != null )
