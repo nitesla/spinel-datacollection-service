@@ -206,7 +206,7 @@ public class EnumeratorService {
         recipient.add(RecipientRequest.builder()
                 .email(emailRecipient.getEmail())
                 .build());
-        notificationRequestDto.setRecipient(recipient);
+        notificationRequestDto.setRecipient(String.valueOf(recipient));
         notificationService.emailNotificationRequest(notificationRequestDto);
 
         SmsRequest smsRequest = SmsRequest.builder()

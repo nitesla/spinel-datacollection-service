@@ -123,7 +123,7 @@ public class DataCollectionUserService {
         notificationRequestDto.setMessage("Activation Otp  " + user.getResetToken());
         List<RecipientRequest> recipient = new ArrayList();
         recipient.add(RecipientRequest.builder().email(emailRecipient.getEmail()).build());
-        notificationRequestDto.setRecipient(recipient);
+        notificationRequestDto.setRecipient(String.valueOf(recipient));
         this.notificationService.emailNotificationRequest(notificationRequestDto);
         SmsRequest smsRequest = SmsRequest.builder().message("Activation Otp  " + user.getResetToken()).phoneNumber(emailRecipient.getPhone()).build();
         this.notificationService.smsNotificationRequest(smsRequest);

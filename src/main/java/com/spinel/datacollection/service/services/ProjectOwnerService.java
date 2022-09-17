@@ -186,7 +186,7 @@ public class ProjectOwnerService {
         recipient.add(RecipientRequest.builder()
                 .email(emailRecipient.getEmail())
                 .build());
-        notificationRequestDto.setRecipient(recipient);
+        notificationRequestDto.setRecipient(String.valueOf(recipient));
         notificationService.emailNotificationRequest(notificationRequestDto);
 
         SmsRequest smsRequest = SmsRequest.builder()
@@ -351,7 +351,7 @@ public class ProjectOwnerService {
         recipient.add(RecipientRequest.builder()
                 .email(emailRecipient.getEmail())
                 .build());
-        notificationRequestDto.setRecipient(recipient);
+        notificationRequestDto.setRecipient(String.valueOf(recipient));
         notificationService.emailNotificationRequest(notificationRequestDto);
         auditTrailService
                 .logEvent(user.getUsername(),

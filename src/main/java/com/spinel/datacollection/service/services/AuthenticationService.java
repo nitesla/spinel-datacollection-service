@@ -2,6 +2,7 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import com.spinel.datacollection.core.dto.request.auth.DataCollectionLoginRequest;
 import com.spinel.datacollection.core.enums.UserCategory;
 import com.spinel.datacollection.core.models.Enumerator;
 import com.spinel.datacollection.core.models.ProjectOwner;
@@ -11,7 +12,7 @@ import com.spinel.datacollection.service.repositories.ProjectOwnerRepository;
 
 import com.spinel.framework.dto.requestDto.LoginRequest;
 import com.spinel.framework.dto.responseDto.AccessTokenWithUserDetails;
-import com.spinel.framework.dto.responseDto.PartnersCategoryReturn;
+import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.LockedException;
 import com.spinel.framework.exceptions.UnauthorizedException;
 import com.spinel.framework.models.User;
@@ -22,6 +23,7 @@ import com.spinel.framework.utils.AuditTrailFlag;
 import com.spinel.framework.utils.CustomResponseCode;
 import com.spinel.framework.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.List;
 import java.util.Objects;
 
 @SuppressWarnings("ALL")
@@ -60,7 +61,30 @@ public class AuthenticationService {
         this.tokenService = tokenService;
     }
 
-    public AccessTokenWithUserDetails loginUser(LoginRequest loginRequest, HttpServletRequest request) {
+    public AccessTokenWithUserDetails login(DataCollectionLoginRequest request, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+        validateLoginRequest(request);
+        String userType = request.getUserType().toUpperCase();
+        AccessTokenWithUserDetails accessTokenWithUserDetails = null;
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(request.getUsername());
+        loginRequest.setPassword(request.getPassword());
+        Objects.requireNonNull(loginRequest, "Login Request Object is null");
+        final String admin = UserCategory.ADMIN.name();
+        switch (UserCategory.valueOf(userType)) {
+            case ENUMERATOR:
+                accessTokenWithUserDetails = loginUser(loginRequest, httpServletRequest);
+                break;
+            case PROJECT_OWNER:
+                accessTokenWithUserDetails = loginUser(loginRequest, httpServletRequest);
+                break;
+            case ADMIN:
+                accessTokenWithUserDetails = loginAdminUser(loginRequest, httpServletRequest);
+                break;
+        }
+        return accessTokenWithUserDetails;
+    }
+
+    private AccessTokenWithUserDetails loginUser(LoginRequest loginRequest, HttpServletRequest request) {
         log.info(":::::::::: login Request %s:::::::::::::" + loginRequest.getUsername());
         String loginStatus;
         String ipAddress = Utility.getClientIp(request);
@@ -90,7 +114,7 @@ public class AuthenticationService {
         return completeLogin(loginRequest, user, ipAddress);
     }
 
-    public AccessTokenWithUserDetails loginAdminUser(@RequestBody @Valid LoginRequest loginRequest, HttpServletRequest request) throws JsonProcessingException {
+    private AccessTokenWithUserDetails loginAdminUser(@RequestBody @Valid LoginRequest loginRequest, HttpServletRequest request) throws JsonProcessingException {
 
         log.info(":::::::::: login Request %s:::::::::::::" + loginRequest.getUsername());
         String loginStatus;
@@ -127,7 +151,7 @@ public class AuthenticationService {
         String clientId= "";
         String referralCode="";
         String isEmailVerified="";
-        List<PartnersCategoryReturn> partnerCategory= null;
+//        List<PartnersCategoryReturn> partnerCategory= null;
 
         AccessTokenWithUserDetails details = new AccessTokenWithUserDetails(newToken, user,
                 accessList,userService.getSessionExpiry(),clientId,referralCode,isEmailVerified);
@@ -176,6 +200,15 @@ public class AuthenticationService {
             throw new UnauthorizedException(CustomResponseCode.UNAUTHORIZED, "Login details does not exist");
         }
         return user.getUserCategory().equals(UserCategory.ADMIN.toString());
+    }
+
+    private void validateLoginRequest(DataCollectionLoginRequest request) {
+        if(request.getUserType() == null) {
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "UserType field cannot be empty");
+        }
+        if(!EnumUtils.isValidEnum(UserCategory.class, request.getUserType().toUpperCase())) {
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Enter a valid value for UserType");
+        }
     }
 
 }
