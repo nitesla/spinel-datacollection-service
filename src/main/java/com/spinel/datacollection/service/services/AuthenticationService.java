@@ -207,7 +207,7 @@ public class AuthenticationService {
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "UserType field cannot be empty");
         }
         if(!EnumUtils.isValidEnum(UserCategory.class, request.getUserType().toUpperCase())) {
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Enter a valid value for UserType");
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Enter a valid value for UserType: admin/enumerator/project_owner");
         }
     }
 
