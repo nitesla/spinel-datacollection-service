@@ -6,9 +6,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-import java.util.Map;
 
+@Repository
 public interface DataPaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(value = "SELECT * FROM Payment WHERE " +
@@ -21,4 +22,6 @@ public interface DataPaymentRepository extends JpaRepository<Payment, Long> {
                            @Param("status") String status,
                            @Param("paymentMethod") Integer paymentMethod,
                            Pageable pageable);
+
+    Payment findByReference(String reference);
 }
