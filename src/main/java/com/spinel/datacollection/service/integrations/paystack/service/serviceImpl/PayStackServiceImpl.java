@@ -82,7 +82,6 @@ public class PayStackServiceImpl implements PaymentService {
     public VerifyTransactionResponse verifyTransaction(VerifyTransaction verifyTransaction) {
         String url = verifyTransactionUrl + verifyTransaction.getReference();
         PayStackVerifyTransactionResponse payStackResponse = api.get(url, PayStackVerifyTransactionResponse.class, getHeader());
-        System.err.println(payStackResponse);
 
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH);
