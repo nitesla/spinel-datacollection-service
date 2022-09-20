@@ -2,7 +2,6 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-
 import com.spinel.datacollection.core.dto.request.CompleteSignupRequest;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.EnumeratorDto;
@@ -14,7 +13,6 @@ import com.spinel.datacollection.core.models.LGA;
 import com.spinel.datacollection.service.helper.DateEnum;
 import com.spinel.datacollection.service.helper.DateFormatter;
 import com.spinel.datacollection.service.helper.Validations;
-
 import com.spinel.datacollection.service.repositories.*;
 import com.spinel.framework.dto.requestDto.ChangePasswordDto;
 import com.spinel.framework.exceptions.BadRequestException;
@@ -25,8 +23,6 @@ import com.spinel.framework.models.User;
 import com.spinel.framework.models.UserRole;
 import com.spinel.framework.notification.requestDto.NotificationRequestDto;
 import com.spinel.framework.notification.requestDto.RecipientRequest;
-import com.spinel.framework.notification.requestDto.SmsRequest;
-import com.spinel.framework.notification.requestDto.WhatsAppRequest;
 import com.spinel.framework.repositories.PreviousPasswordRepository;
 import com.spinel.framework.repositories.UserRepository;
 import com.spinel.framework.repositories.UserRoleRepository;
@@ -206,21 +202,22 @@ public class EnumeratorService {
         recipient.add(RecipientRequest.builder()
                 .email(emailRecipient.getEmail())
                 .build());
-        notificationRequestDto.setRecipient(String.valueOf(recipient));
+//        notificationRequestDto.setRecipient(String.valueOf(recipient));
+        notificationRequestDto.setRecipient(emailRecipient.getEmail());
         notificationService.emailNotificationRequest(notificationRequestDto);
 
-        SmsRequest smsRequest = SmsRequest.builder()
-                .message("Activation Otp " + " " + user.getResetToken())
-                .phoneNumber(emailRecipient.getPhone())
-                .build();
-        notificationService.smsNotificationRequest(smsRequest);
+//        SmsRequest smsRequest = SmsRequest.builder()
+//                .message("Activation Otp " + " " + user.getResetToken())
+//                .phoneNumber(emailRecipient.getPhone())
+//                .build();
+//        notificationService.smsNotificationRequest(smsRequest);
 
 
-        WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
-                .message("Activation Otp " + " " + user.getResetToken())
-                .phoneNumber(emailRecipient.getPhone())
-                .build();
-        whatsAppService.whatsAppNotification(whatsAppRequest);
+//        WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder()
+//                .message("Activation Otp " + " " + user.getResetToken())
+//                .phoneNumber(emailRecipient.getPhone())
+//                .build();
+//        whatsAppService.whatsAppNotification(whatsAppRequest);
 
         auditTrailService
                 .logEvent(response.getUsername(),
