@@ -1,9 +1,6 @@
 package com.spinel.datacollection.service.helper;
 
 
-
-
-import com.sabi.datacollection.core.dto.request.JobRequestDto;
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Country;

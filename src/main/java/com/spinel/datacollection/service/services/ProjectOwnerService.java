@@ -1,11 +1,7 @@
 package com.spinel.datacollection.service.services;
 
-import com.sabi.datacollection.core.dto.response.ProjectOwnerEnumeratorKyc;
 import com.spinel.datacollection.core.dto.request.*;
-import com.spinel.datacollection.core.dto.response.CompleteProjectOwnerSignUpResponse;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerActivationResponse;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerResponseDto;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
+import com.spinel.datacollection.core.dto.response.*;
 import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.enums.UserCategory;

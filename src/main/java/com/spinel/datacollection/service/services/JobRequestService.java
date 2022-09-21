@@ -2,10 +2,10 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.sabi.datacollection.core.dto.request.JobRequestDto;
-import com.sabi.datacollection.core.dto.response.JobRequestResponseDto;
-import com.sabi.datacollection.core.enums.GeneralStatus;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
+import com.spinel.datacollection.core.dto.request.JobRequestDto;
+import com.spinel.datacollection.core.dto.response.JobRequestResponseDto;
+import com.spinel.datacollection.core.enums.GeneralStatus;
 import com.spinel.datacollection.core.models.JobRequest;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.JobRequestRepository;
