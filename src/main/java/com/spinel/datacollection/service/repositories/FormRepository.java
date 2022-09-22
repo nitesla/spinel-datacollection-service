@@ -29,8 +29,9 @@ public interface FormRepository extends JpaRepository<Form, Long> {
 
     @Query("SELECT s FROM Form s WHERE ((:isActive IS NULL) OR (:isActive IS NOT NULL AND s.isActive = :isActive))"  +
             " AND ((:projectId IS NULL) OR (:projectId IS NOT NULL AND s.projectId = :projectId))" +
+            " AND ((:userId IS NULL) OR (:userId IS NOT NULL AND s.userId = :userId))" +
             " AND ((:projectOwnerId IS NULL) OR (:projectOwnerId IS NOT NULL AND s.projectOwnerId = :projectOwnerId)) order by s.id desc")
-    List<Form> findByIsActive(Boolean isActive, Long projectId, Long projectOwnerId);
+    List<Form> findByIsActive(Boolean isActive, Long projectId, Long userId, Long projectOwnerId);
 
 
     @Query("SELECT s FROM Form s WHERE ((:name IS NULL) OR (:name IS NOT NULL AND s.name like %:name%))" +
