@@ -16,7 +16,9 @@ import com.spinel.datacollection.service.helper.DateFormatter;
 import com.spinel.datacollection.service.helper.Validations;
 
 import com.spinel.datacollection.service.repositories.*;
+import com.spinel.framework.dto.requestDto.ActivateUserAccountDto;
 import com.spinel.framework.dto.requestDto.ChangePasswordDto;
+import com.spinel.framework.dto.responseDto.ActivateUserResponse;
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
@@ -30,10 +32,7 @@ import com.spinel.framework.notification.requestDto.WhatsAppRequest;
 import com.spinel.framework.repositories.PreviousPasswordRepository;
 import com.spinel.framework.repositories.UserRepository;
 import com.spinel.framework.repositories.UserRoleRepository;
-import com.spinel.framework.service.AuditTrailService;
-import com.spinel.framework.service.NotificationService;
-import com.spinel.framework.service.TokenService;
-import com.spinel.framework.service.WhatsAppService;
+import com.spinel.framework.service.*;
 import com.spinel.framework.utils.AuditTrailFlag;
 import com.spinel.framework.utils.CustomResponseCode;
 import com.spinel.framework.utils.Utility;
@@ -85,6 +84,7 @@ public class EnumeratorService {
     private final ProjectRoleRepository projectRoleRepository;
     private final SubmissionService submissionService;
     private final ProjectEnumeratorRepository projectEnumeratorRepository;
+    private final UserService userService;
 
 
     public EnumeratorService(EnumeratorRepository repository, UserRepository userRepository,
@@ -92,7 +92,7 @@ public class EnumeratorService {
                              ObjectMapper objectMapper, Validations validations, NotificationService notificationService,
                              LGARepository lgaRepository, AuditTrailService auditTrailService,
                              StateRepository stateRepository, UserRoleRepository userRoleRepository, ProjectEnumeratorService projectEnumeratorService,
-                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository, SubmissionService submissionService, ProjectEnumeratorRepository projectEnumeratorRepository) {
+                             CountryRepository countryRepository, ProjectRoleRepository projectRoleRepository, SubmissionService submissionService, ProjectEnumeratorRepository projectEnumeratorRepository, UserService userService) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.previousPasswordRepository = previousPasswordRepository;
@@ -109,6 +109,7 @@ public class EnumeratorService {
         this.projectRoleRepository = projectRoleRepository;
         this.submissionService = submissionService;
         this.projectEnumeratorRepository = projectEnumeratorRepository;
+        this.userService = userService;
     }
 
 
@@ -593,5 +594,14 @@ public class EnumeratorService {
         enumeratorResponse.setPhone(enumerator.getPhone());
         enumeratorResponse.setPictureUrl(enumerator.getPictureUrl());
         return mapper.map(enumeratorResponse, EnumeratorKYCResponseDto.class);
+    }
+
+    public ActivateUserResponse validateOtpAndActivateUser(ActivateUserAccountDto request) {
+        ActivateUserResponse activateUserResponse = userService.activateUser(request);
+        Enumerator enumerator = repository.findEnumeratorByUserId(activateUserResponse.getUserId());
+        enumerator.setIsActive(true);
+        enumerator.setUpdatedDate(LocalDateTime.now());
+        repository.save(enumerator);
+        return activateUserResponse;
     }
 }

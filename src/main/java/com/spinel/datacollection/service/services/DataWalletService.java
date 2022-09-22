@@ -42,6 +42,15 @@ public class DataWalletService {
         return mapper.map(wallet, WalletResponseDto.class);
     }
 
+    public WalletResponseDto createWalletOnSignUp(CreateWalletDto request) {
+        Wallet wallet = mapper.map(request, Wallet.class);
+        wallet.setIsActive(true);
+        wallet.setCreatedDate(LocalDateTime.now());
+        wallet = dataWalletRepository.save(wallet);
+        log.info("Created wallet - {}", wallet);
+        return mapper.map(wallet, WalletResponseDto.class);
+    }
+
     public WalletResponseDto findWalletById(Long id) {
         Wallet wallet = dataWalletRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
