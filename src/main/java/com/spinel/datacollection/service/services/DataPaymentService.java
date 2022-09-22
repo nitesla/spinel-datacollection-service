@@ -13,6 +13,8 @@ import com.spinel.datacollection.service.payment.PaymentFactoryService;
 import com.spinel.datacollection.service.payment.PaymentService;
 import com.spinel.datacollection.service.repositories.DataPaymentRepository;
 import com.spinel.framework.exceptions.ConflictException;
+import com.spinel.framework.models.User;
+import com.spinel.framework.service.TokenService;
 import com.spinel.framework.utils.CustomResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,7 @@ public class DataPaymentService {
     }
 
     public PaymentResponseDto initializeTransaction(InitializeTransactionRequest request) {
+        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
         String reference = generateReference();
         Payment paymentExists = dataPaymentRepository.findByReference(reference);
         if(Objects.nonNull(paymentExists)) {
@@ -65,6 +68,7 @@ public class DataPaymentService {
         payment.setRedirectURL(response.getUrl());
         payment.setPaymentProvider(integratedPaymentService.getValue());
         payment.setEmail(initializeTransaction.getEmail());
+        payment.setUserId(userCurrent.getId());
         dataPaymentRepository.save(payment);
         PaymentResponseDto paymentResponseDto = mapper.map(payment, PaymentResponseDto.class);
         paymentResponseDto.setResponseDescription(response.getMessage());

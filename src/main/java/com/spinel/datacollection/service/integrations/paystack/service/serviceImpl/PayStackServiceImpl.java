@@ -145,7 +145,12 @@ public class PayStackServiceImpl implements PaymentService {
                 .queryParam("from", totalTransaction.getFrom())
                 .queryParam("to", totalTransaction.getTo());
 
-        return api.get(builder.toUriString(), TotalTransactionResponse.class, getHeader());
+        PayStackTotalTransactionResponse totalTransactionResponse = api.get(builder.toUriString(), PayStackTotalTransactionResponse.class, getHeader());
+        return TotalTransactionResponse.builder()
+                .totalTransaction(totalTransactionResponse.getData().getTotal_transaction())
+                .totalVolume(totalTransactionResponse.getData().getTotal_volume())
+                .pendingTransfers(totalTransactionResponse.getData().getPending_transfers())
+                .build();
     }
 
     private Map<String, String> getHeader() {

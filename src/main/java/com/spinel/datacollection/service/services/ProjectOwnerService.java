@@ -45,6 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -603,6 +604,8 @@ public class ProjectOwnerService {
     private void createProjectOwnerWallet(Long userId) {
         CreateWalletDto createWalletDto = new CreateWalletDto();
         createWalletDto.setUserId(userId);
+        createWalletDto.setAvailableBalance(new BigDecimal("0"));
+        createWalletDto.setLedgerBalance(new BigDecimal("0"));
         dataWalletService.createWalletOnSignUp(createWalletDto);
     }
 }
