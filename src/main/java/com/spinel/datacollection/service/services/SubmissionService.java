@@ -5,18 +5,15 @@ import com.google.gson.Gson;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.SubmissionDto;
 import com.spinel.datacollection.core.dto.response.SubmissionResponseDto;
-import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.models.CommentDictionary;
 import com.spinel.datacollection.core.models.Project;
 import com.spinel.datacollection.core.models.ProjectEnumerator;
 import com.spinel.datacollection.core.models.Submission;
 import com.spinel.datacollection.service.helper.DateEnum;
-import com.spinel.datacollection.service.helper.SubmissionsDateEnum;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.CommentDictionaryRepository;
 import com.spinel.datacollection.service.repositories.SubmissionRepository;
-
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.NotFoundException;
 import com.spinel.framework.models.User;
@@ -155,8 +152,8 @@ public class SubmissionService {
 
     }
 
-    public List<Submission> getAll(Boolean isActive){
-        List<Submission> submissions = submissionRepository.findByIsActive(isActive);
+    public List<Submission> getAll(Boolean isActive, Long projectId, Long formId, Long enumeratorId, Long commentId, Long deviceId){
+        List<Submission> submissions = submissionRepository.findByIsActive(isActive, projectId, formId, enumeratorId, commentId, deviceId);
         return submissions;
     }
 

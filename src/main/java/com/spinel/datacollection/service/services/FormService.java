@@ -150,8 +150,8 @@ public class FormService {
 
     }
 
-    public List<Form> getAll(Boolean isActive){
-        List<Form> forms = formRepository.findByIsActive(isActive);
+    public List<Form> getAll(Boolean isActive, Long projectId, Long projectOwnerId){
+        List<Form> forms = formRepository.findByIsActive(isActive, projectId, projectOwnerId);
         return forms;
 
     }
