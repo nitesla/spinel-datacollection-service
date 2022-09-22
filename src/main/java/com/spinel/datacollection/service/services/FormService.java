@@ -2,14 +2,12 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.FormDto;
 import com.spinel.datacollection.core.dto.response.FormResponseDto;
 import com.spinel.datacollection.core.models.Form;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.FormRepository;
-
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
 import com.spinel.framework.models.User;
@@ -21,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -67,6 +66,24 @@ public class FormService {
         form = formRepository.save(form);
         log.debug("Create new Form - {}"+ new Gson().toJson(form));
         return mapper.map(form, FormResponseDto.class);
+    }
+
+    public List<FormResponseDto> createBulkForm(List<FormDto> requestlist) {
+        User currentUser = TokenService.getCurrentUserFromSecurityContext();
+        requestlist.forEach(this.validations::validateForm);
+        List<FormResponseDto> responseDtoList = new ArrayList<>();
+        for (FormDto request : requestlist){
+            Form form = mapper.map(request,Form.class);
+            Form formExist = formRepository.findByName(request.getName());
+            if(formExist !=null){
+                throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " Form already exist");
+            }
+            form.setCreatedBy(currentUser.getId());
+            form.setIsActive(true);
+            form = formRepository.save(form);
+            responseDtoList.add(mapper.map(form,FormResponseDto.class));
+        }
+        return responseDtoList;
     }
 
 
@@ -133,8 +150,8 @@ public class FormService {
 
     }
 
-    public List<Form> getAll(Boolean isActive){
-        List<Form> forms = formRepository.findByIsActive(isActive);
+    public List<Form> getAll(Boolean isActive, Long projectId, Long userId, Long projectOwnerId){
+        List<Form> forms = formRepository.findByIsActive(isActive, projectId, userId, projectOwnerId);
         return forms;
 
     }

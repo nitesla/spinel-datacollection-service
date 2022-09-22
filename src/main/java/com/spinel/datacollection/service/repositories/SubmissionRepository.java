@@ -24,7 +24,19 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     Submission findSubmissionById(Long Id);
 
-    List<Submission> findByIsActive(Boolean isActive);
+    @Query("SELECT s FROM Submission s WHERE ((:isActive IS NULL) OR (:isActive IS NOT NULL AND s.isActive = :isActive))" +
+            " AND ((:projectId IS NULL) OR (:projectId IS NOT NULL AND s.projectId = :projectId))" +
+            " AND ((:formId IS NULL) OR (:formId IS NOT NULL AND s.formId = :formId))" +
+            " AND ((:commentId IS NULL) OR (:commentId IS NOT NULL AND s.commentId = :commentId))" +
+            " AND ((:deviceId IS NULL) OR (:deviceId IS NOT NULL AND s.deviceId = :deviceId))" +
+            " AND ((:enumeratorId IS NULL) OR (:enumeratorId IS NOT NULL AND s.enumeratorId = :enumeratorId)) order by s.id desc")
+    List<Submission> findByIsActive(@Param("isActive") Boolean isActive,
+                                    @Param("projectId") Long projectId,
+                                    @Param("formId") Long formId,
+                                    @Param("commentId") Long commentId,
+                                    @Param("deviceId") Long deviceId,
+                                    @Param("enumeratorId") Long enumeratorId);
+
 
     List<Submission> findAll();
 

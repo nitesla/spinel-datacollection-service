@@ -1,22 +1,16 @@
 package com.spinel.datacollection.service.services;
 
 import com.google.gson.Gson;
-
 import com.spinel.datacollection.core.dto.request.DataCollectionUserRequestDto;
 import com.spinel.datacollection.core.dto.response.DataCollectionUserResponseDto;
 import com.spinel.datacollection.core.enums.UserCategory;
 import com.spinel.datacollection.service.helper.Validations;
-
-
-
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.models.PreviousPasswords;
 import com.spinel.framework.models.User;
 import com.spinel.framework.models.UserRole;
 import com.spinel.framework.notification.requestDto.NotificationRequestDto;
 import com.spinel.framework.notification.requestDto.RecipientRequest;
-import com.spinel.framework.notification.requestDto.SmsRequest;
-import com.spinel.framework.notification.requestDto.WhatsAppRequest;
 import com.spinel.framework.repositories.PreviousPasswordRepository;
 import com.spinel.framework.repositories.UserRepository;
 import com.spinel.framework.repositories.UserRoleRepository;
@@ -123,12 +117,13 @@ public class DataCollectionUserService {
         notificationRequestDto.setMessage("Activation Otp  " + user.getResetToken());
         List<RecipientRequest> recipient = new ArrayList();
         recipient.add(RecipientRequest.builder().email(emailRecipient.getEmail()).build());
-        notificationRequestDto.setRecipient(String.valueOf(recipient));
+//        notificationRequestDto.setRecipient(String.valueOf(recipient));
+        notificationRequestDto.setRecipient(emailRecipient.getEmail());
         this.notificationService.emailNotificationRequest(notificationRequestDto);
-        SmsRequest smsRequest = SmsRequest.builder().message("Activation Otp  " + user.getResetToken()).phoneNumber(emailRecipient.getPhone()).build();
-        this.notificationService.smsNotificationRequest(smsRequest);
-        WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder().message("Activation Otp  " + user.getResetToken()).phoneNumber(emailRecipient.getPhone()).build();
-        this.whatsAppService.whatsAppNotification(whatsAppRequest);
+//        SmsRequest smsRequest = SmsRequest.builder().message("Activation Otp  " + user.getResetToken()).phoneNumber(emailRecipient.getPhone()).build();
+//        this.notificationService.smsNotificationRequest(smsRequest);
+//        WhatsAppRequest whatsAppRequest = WhatsAppRequest.builder().message("Activation Otp  " + user.getResetToken()).phoneNumber(emailRecipient.getPhone()).build();
+//        this.whatsAppService.whatsAppNotification(whatsAppRequest);
 
 //        SupplierUser supplier = new SupplierUser();
 //        supplier.setSupplierId(supplierUser.getSupplierId());

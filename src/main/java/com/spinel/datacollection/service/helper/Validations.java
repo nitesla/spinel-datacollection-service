@@ -1,9 +1,6 @@
 package com.spinel.datacollection.service.helper;
 
 
-
-
-import com.sabi.datacollection.core.dto.request.JobRequestDto;
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Country;
@@ -671,8 +668,8 @@ public class Validations {
     public void validateForm(FormDto request) {
         if (request.getName() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "name cannot be empty");
-        if (request.getVersion() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
+//        if (request.getVersion() == null)
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "version cannot be empty");
         if (request.getDescription() == null)
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "description cannot be empty");
         userRepository.findById(request.getUserId())

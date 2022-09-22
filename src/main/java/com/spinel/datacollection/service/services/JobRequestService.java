@@ -2,10 +2,10 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.sabi.datacollection.core.dto.request.JobRequestDto;
-import com.sabi.datacollection.core.dto.response.JobRequestResponseDto;
-import com.sabi.datacollection.core.enums.GeneralStatus;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
+import com.spinel.datacollection.core.dto.request.JobRequestDto;
+import com.spinel.datacollection.core.dto.response.JobRequestResponseDto;
+import com.spinel.datacollection.core.enums.GeneralStatus;
 import com.spinel.datacollection.core.models.JobRequest;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.JobRequestRepository;
@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -56,6 +57,26 @@ public class JobRequestService {
         jobRequest = jobRequestRepository.save(jobRequest);
         log.debug("Create new jobRequest - {}"+ new Gson().toJson(jobRequest));
         return mapper.map(jobRequest, JobRequestResponseDto.class);
+    }
+
+    public List<JobRequestResponseDto> createBulkJobRequest(List<JobRequestDto> requestlist) {
+        User currentUser = TokenService.getCurrentUserFromSecurityContext();
+        requestlist.forEach(this.validations::validateJobRequest);
+        List<JobRequestResponseDto> responseDtoList = new ArrayList<>();
+        for (JobRequestDto request : requestlist){
+            JobRequest jobRequest = mapper.map(request, JobRequest.class);
+            JobRequest jobRequestExist = jobRequestRepository.findByProjectId(request.getProjectId());
+            if(jobRequestExist !=null){
+                throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, " jobRequest already exist");
+            }
+            jobRequest.setCreatedBy(currentUser.getId());
+            jobRequest.setIsActive(true);
+            jobRequest.setRequestedDate(LocalDateTime.now());
+            jobRequest.setStatus(GeneralStatus.PENDING);
+            jobRequest = jobRequestRepository.save(jobRequest);
+            responseDtoList.add(mapper.map(jobRequest, JobRequestResponseDto.class));
+        }
+        return responseDtoList;
     }
 
 
