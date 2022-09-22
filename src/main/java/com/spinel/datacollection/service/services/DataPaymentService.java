@@ -1,10 +1,9 @@
 package com.spinel.datacollection.service.services;
 
 
-import com.spinel.datacollection.core.dto.payment.request.InitializeTransactionRequest;
-import com.spinel.datacollection.core.dto.payment.request.VerifyTransaction;
-import com.spinel.datacollection.core.dto.payment.response.VerifyTransactionResponse;
-import com.spinel.datacollection.core.dto.request.PaymentRequestDto;
+import com.spinel.datacollection.core.dto.payment.request.*;
+import com.spinel.datacollection.core.dto.payment.response.TotalTransactionResponse;
+import com.spinel.datacollection.core.dto.payment.response.TransactionResponse;
 import com.spinel.datacollection.core.dto.response.PaymentResponseDto;
 import com.spinel.datacollection.core.dto.payment.response.InitializeTransactionResponse;
 import com.spinel.datacollection.core.models.Payment;
@@ -14,9 +13,6 @@ import com.spinel.datacollection.service.payment.PaymentFactoryService;
 import com.spinel.datacollection.service.payment.PaymentService;
 import com.spinel.datacollection.service.repositories.DataPaymentRepository;
 import com.spinel.framework.exceptions.ConflictException;
-import com.spinel.framework.exceptions.NotFoundException;
-import com.spinel.framework.models.User;
-import com.spinel.framework.service.TokenService;
 import com.spinel.framework.utils.CustomResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +21,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 @SuppressWarnings("ALL")
 @RequiredArgsConstructor
@@ -38,23 +36,6 @@ public class DataPaymentService {
     private final ModelMapper mapper;
     private final Validations validations;
 
-
-    public PaymentResponseDto createPayment(PaymentRequestDto request) {
-        User userCurrent = TokenService.getCurrentUserFromSecurityContext();
-        Payment payment = mapper.map(request, Payment.class);
-        payment.setReference(validations.generateReferenceNumber(10));
-        payment = dataPaymentRepository.save(payment);
-        log.info("Created new Payment - {}", payment);
-        return mapper.map(payment, PaymentResponseDto.class);
-    }
-
-    public PaymentResponseDto findPaymentById(Long id) {
-        Payment payment = dataPaymentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        "Requested Payment Id does not exist"));
-        return mapper.map(payment, PaymentResponseDto.class);
-    }
-
     public Page<Payment> findAll(String paymentReference, String reference, String status, Integer paymentMethod, Pageable pageable) {
         return dataPaymentRepository.findAll(paymentReference, reference,status,
                 paymentMethod, pageable);
@@ -65,18 +46,21 @@ public class DataPaymentService {
         return mapper.map(payment, PaymentResponseDto.class);
     }
 
-    public PaymentResponseDto initializeTransaction(InitializeTransactionRequest initializeTransaction) {
-        Payment paymentExists = dataPaymentRepository.findByReference(initializeTransaction.getReference());
+    public PaymentResponseDto initializeTransaction(InitializeTransactionRequest request) {
+        String reference = generateReference();
+        Payment paymentExists = dataPaymentRepository.findByReference(reference);
         if(Objects.nonNull(paymentExists)) {
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "reference number already exists");
         }
+        InitializeTransaction initializeTransaction = mapper.map(request, InitializeTransaction.class);
+        initializeTransaction.setReference(reference);
         IntegratedPaymentService integratedPaymentService = IntegratedPaymentService.validatePaymentService(initializeTransaction.getPaymentProvider().toLowerCase());
         PaymentService paymentService = factoryService.getPaymentService(integratedPaymentService);
         InitializeTransactionResponse response = paymentService.initializeTransaction(initializeTransaction);
         Payment payment = new Payment();
         payment.setAmount(response.getAmount());
         payment.setThirdPartyCode(response.getAccessCode());
-        payment.setReference(initializeTransaction.getReference());
+        payment.setReference(reference);
         payment.setPaymentReference(response.getReference());
         payment.setRedirectURL(response.getUrl());
         payment.setPaymentProvider(integratedPaymentService.getValue());
@@ -92,9 +76,8 @@ public class DataPaymentService {
         if(Objects.isNull(paymentExists)) {
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Invalid transaction reference.");
         }
-        IntegratedPaymentService integratedPaymentService = IntegratedPaymentService.validatePaymentService(paymentExists.getPaymentProvider());
-        PaymentService paymentService = factoryService.getPaymentService(integratedPaymentService);
-        VerifyTransactionResponse response = paymentService.verifyTransaction(verifyTransaction);
+        PaymentService paymentService = validatePaymentProvider(paymentExists.getPaymentProvider());
+        TransactionResponse response = paymentService.verifyTransaction(verifyTransaction);
         paymentExists.setPaymentProviderId(response.getPaymentProviderId());
         paymentExists.setResponseDescription(response.getMessage());
         paymentExists.setTransactionDate(response.getCreatedAt());
@@ -103,7 +86,35 @@ public class DataPaymentService {
         dataPaymentRepository.save(paymentExists);
 
         return mapper.map(paymentExists, PaymentResponseDto.class);
+    }
 
+    public TotalTransactionResponse totalTransactions(int perPage, int page, String from, String to, String paymentProvider) {
+        PaymentService paymentService = validatePaymentProvider(paymentProvider);
+        return paymentService.totalTransactions(new TotalTransaction(perPage, page, from, to));
+    }
+
+    public List<TransactionResponse> listTransactions(int perPage, int page, String from, String to, String status, String customer, String paymentProvider) {
+        PaymentService paymentService = validatePaymentProvider(paymentProvider);
+        return paymentService.listTransactions(new ListTransactions(perPage, page, from, to, status, customer));
+    }
+
+    public TransactionResponse fetchTransactions(String paymentProviderId, String paymentProvider) {
+        PaymentService paymentService = validatePaymentProvider(paymentProvider);
+        return paymentService.fetchTransaction(paymentProviderId);
+    }
+
+    private String generateReference() {
+        String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        Random rnd = new Random();
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++)
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        return "TRN_REF"+sb.toString();
+    }
+
+    private PaymentService validatePaymentProvider(String paymentProvider) {
+        IntegratedPaymentService integratedPaymentService = IntegratedPaymentService.validatePaymentService(paymentProvider.toLowerCase());
+        return factoryService.getPaymentService(integratedPaymentService);
     }
 
 
