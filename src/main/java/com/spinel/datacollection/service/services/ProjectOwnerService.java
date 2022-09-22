@@ -6,6 +6,7 @@ import com.spinel.datacollection.core.dto.response.CompleteProjectOwnerSignUpRes
 import com.spinel.datacollection.core.dto.response.ProjectOwnerActivationResponse;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerResponseDto;
 import com.spinel.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
+import com.spinel.datacollection.core.dto.wallet.CreateWalletDto;
 import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.enums.UserCategory;
@@ -74,10 +75,11 @@ public class ProjectOwnerService {
     private final ProjectRepository projectRepository;
     private final UserService userService;
     private final SubmissionService submissionService;
+    private final DataWalletService dataWalletService;
 
     public ProjectOwnerService(ProjectOwnerUserRepository projectOwnerUserRepository, SectorRepository sectorRepository, LGARepository lgaRepository,
                                AuditTrailService auditTrailService, PasswordEncoder passwordEncoder, UserRepository userRepository, PreviousPasswordRepository previousPasswordRepository,
-                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService, SubmissionService submissionService) {
+                               ProjectOwnerRepository projectOwnerRepository, ModelMapper mapper, Validations validations, UserRoleRepository userRoleRepository, ProjectRepository projectRepository, UserService userService, SubmissionService submissionService, DataWalletService dataWalletService) {
         this.projectOwnerUserRepository = projectOwnerUserRepository;
         this.sectorRepository = sectorRepository;
         this.lgaRepository = lgaRepository;
@@ -92,6 +94,7 @@ public class ProjectOwnerService {
         this.projectRepository = projectRepository;
         this.userService = userService;
         this.submissionService = submissionService;
+        this.dataWalletService = dataWalletService;
     }
 
     public ProjectOwnerSignUpResponseDto projectOwnerSignUp(ProjectOwnerSignUpDto request, HttpServletRequest request1) {
@@ -163,6 +166,7 @@ public class ProjectOwnerService {
         projectOwnerUser.setProjectOwnerId(projectOwner.getId());
         projectOwnerUser.setUserId(user.getId());
         projectOwnerUserRepository.save(projectOwnerUser);
+        createProjectOwnerWallet(user.getId());
 
         ProjectOwnerSignUpResponseDto response = ProjectOwnerSignUpResponseDto.builder()
                 .id(user.getId())
@@ -471,7 +475,12 @@ public class ProjectOwnerService {
     }
 
     public ActivateUserResponse validateOtpAndActivateUser(ActivateUserAccountDto request) {
-        return userService.activateUser(request);
+        ActivateUserResponse activateUserResponse = userService.activateUser(request);
+        ProjectOwner projectOwner = projectOwnerRepository.findProjectOwnerByUserId(activateUserResponse.getUserId());
+        projectOwner.setIsActive(true);
+        projectOwner.setUpdatedDate(LocalDateTime.now());
+        projectOwnerRepository.save(projectOwner);
+        return activateUserResponse;
     }
 
     public UserActivationResponse accountActivation(PasswordActivationRequest request) {
@@ -589,5 +598,11 @@ public class ProjectOwnerService {
         projectOwnerEnumeratorKyc.setCAC(projectOwner.getCAC());
 //        projectOwnerEnumeratorKyc.setO(projectOwner.getOrganisationType());
         return mapper.map(projectOwnerEnumeratorKyc, ProjectOwnerEnumeratorKyc.class);
+    }
+
+    private void createProjectOwnerWallet(Long userId) {
+        CreateWalletDto createWalletDto = new CreateWalletDto();
+        createWalletDto.setUserId(userId);
+        dataWalletService.createWalletOnSignUp(createWalletDto);
     }
 }
