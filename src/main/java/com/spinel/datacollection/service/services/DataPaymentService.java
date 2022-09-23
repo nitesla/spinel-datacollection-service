@@ -4,6 +4,7 @@ package com.spinel.datacollection.service.services;
 import com.spinel.datacollection.core.dto.payment.request.*;
 import com.spinel.datacollection.core.dto.payment.response.TotalTransactionResponse;
 import com.spinel.datacollection.core.dto.payment.response.TransactionResponse;
+import com.spinel.datacollection.core.dto.request.FundWalletRequest;
 import com.spinel.datacollection.core.dto.response.PaymentResponseDto;
 import com.spinel.datacollection.core.dto.payment.response.InitializeTransactionResponse;
 import com.spinel.datacollection.core.models.Payment;
@@ -37,6 +38,7 @@ public class DataPaymentService {
     private final DataPaymentRepository dataPaymentRepository;
     private final ModelMapper mapper;
     private final Validations validations;
+    private final DataWalletService dataWalletService;
 
     public Page<Payment> findAll(String paymentReference, String reference, String status, Integer paymentMethod, Pageable pageable) {
         return dataPaymentRepository.findAll(paymentReference, reference,status,
@@ -88,6 +90,10 @@ public class DataPaymentService {
         paymentExists.setAmount(response.getAmount());
         paymentExists.setStatus(response.getStatus());
         dataPaymentRepository.save(paymentExists);
+
+        if(verifyTransaction.getIsFundWallet()) {
+            dataWalletService.fundWallet(new FundWalletRequest(response.getEmail(), response.getAmount()));
+        }
 
         return mapper.map(paymentExists, PaymentResponseDto.class);
     }

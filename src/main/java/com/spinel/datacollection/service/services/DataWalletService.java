@@ -2,7 +2,7 @@ package com.spinel.datacollection.service.services;
 
 
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
-import com.spinel.datacollection.core.dto.request.auth.FundWalletRequest;
+import com.spinel.datacollection.core.dto.request.FundWalletRequest;
 import com.spinel.datacollection.core.dto.wallet.CreateWalletDto;
 import com.spinel.datacollection.core.dto.wallet.WalletResponseDto;
 import com.spinel.datacollection.core.models.Wallet;
