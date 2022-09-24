@@ -466,9 +466,9 @@ public class Validations {
         projectOwnerRepository.findById(projectDto.getProjectOwnerId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Project Owner id!"));
-        projectCategoryRepository.findById(projectDto.getProjectCategoryId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Project Category id!"));
+//        projectCategoryRepository.findById(projectDto.getProjectCategoryId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Project Category id!"));
         sectorRepository.findById(projectDto.getSectorId())
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         " Enter a valid Sector id!"));
