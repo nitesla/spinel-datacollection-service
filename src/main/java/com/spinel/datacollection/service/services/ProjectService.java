@@ -14,7 +14,6 @@ import com.spinel.datacollection.service.repositories.ProjectCategoryRepository;
 import com.spinel.datacollection.service.repositories.ProjectOwnerEnumeratorRepository;
 import com.spinel.datacollection.service.repositories.ProjectOwnerRepository;
 import com.spinel.datacollection.service.repositories.ProjectRepository;
-
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
@@ -78,7 +77,7 @@ public class ProjectService {
         LocalDateTime endDate = LocalDateTime.parse(request.getEndDate(), format);
         Project project = Project.builder()
                 .name(request.getName())
-                .projectCategoryId(request.getProjectCategoryId())
+//                .projectCategoryId(request.getProjectCategoryId())
                 .status(Status.valueOf(request.getStatus()))
                 .startDate(startDate)
                 .endDate(endDate)
