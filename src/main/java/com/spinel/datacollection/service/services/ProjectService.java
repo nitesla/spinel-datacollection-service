@@ -6,14 +6,9 @@ import com.spinel.datacollection.core.dto.request.ProjectDto;
 import com.spinel.datacollection.core.dto.response.ProjectResponseDto;
 import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
-import com.spinel.datacollection.core.models.Project;
-import com.spinel.datacollection.core.models.ProjectCategory;
-import com.spinel.datacollection.core.models.ProjectOwner;
+import com.spinel.datacollection.core.models.*;
 import com.spinel.datacollection.service.helper.Validations;
-import com.spinel.datacollection.service.repositories.ProjectCategoryRepository;
-import com.spinel.datacollection.service.repositories.ProjectOwnerEnumeratorRepository;
-import com.spinel.datacollection.service.repositories.ProjectOwnerRepository;
-import com.spinel.datacollection.service.repositories.ProjectRepository;
+import com.spinel.datacollection.service.repositories.*;
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
@@ -34,11 +29,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -53,8 +44,12 @@ public class ProjectService {
     private final Validations validations;
     private final SubmissionService submissionService;
     private final ProjectOwnerEnumeratorRepository projectOwnerEnumeratorRepository;
+    private final ProjectFileRepository projectFileRepository;
+    private final ProjectMediaRepository projectMediaRepository;
+    private final ProjectProjectCategoryRepository projectProjectCategoryRepository;
+    private final ProjectSurveyRepository projectSurveyRepository;
 
-    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations, SubmissionService submissionService, ProjectOwnerEnumeratorRepository projectOwnerEnumeratorRepository) {
+    public ProjectService(ProjectRepository projectRepository, ProjectOwnerRepository projectOwnerRepository, ProjectCategoryRepository projectCategoryRepository, AuditTrailService auditTrailService, ModelMapper mapper, Validations validations, SubmissionService submissionService, ProjectOwnerEnumeratorRepository projectOwnerEnumeratorRepository, ProjectFileRepository projectFileRepository, ProjectMediaRepository projectMediaRepository, ProjectProjectCategoryRepository projectProjectCategoryRepository, ProjectSurveyRepository projectSurveyRepository) {
         this.projectRepository = projectRepository;
         this.projectOwnerRepository = projectOwnerRepository;
         this.projectCategoryRepository = projectCategoryRepository;
@@ -63,6 +58,10 @@ public class ProjectService {
         this.validations = validations;
         this.submissionService = submissionService;
         this.projectOwnerEnumeratorRepository = projectOwnerEnumeratorRepository;
+        this.projectFileRepository = projectFileRepository;
+        this.projectMediaRepository = projectMediaRepository;
+        this.projectProjectCategoryRepository = projectProjectCategoryRepository;
+        this.projectSurveyRepository = projectSurveyRepository;
     }
 
     public ProjectResponseDto createProject(ProjectDto request,  HttpServletRequest request1) {
@@ -72,24 +71,22 @@ public class ProjectService {
         if(projectExists != null) {
             throw new ConflictException(CustomResponseCode.CONFLICT_EXCEPTION, "Project already exists");
         }
-        DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm");
-        LocalDateTime startDate = LocalDateTime.parse(request.getStartDate(), format);
-        LocalDateTime endDate = LocalDateTime.parse(request.getEndDate(), format);
-        Project project = Project.builder()
-                .name(request.getName())
-//                .projectCategoryId(request.getProjectCategoryId())
-                .status(Status.valueOf(request.getStatus()))
-                .startDate(startDate)
-                .endDate(endDate)
-                .sectorId(request.getSectorId())
-                .imageQuality(request.getImageQuality())
-                .isLocationBased(request.getIsLocationBased())
-                .projectOwnerId(request.getProjectOwnerId())
-                .build();
+
+        List<Long> projectCategoryIds = request.getProjectCategoryIds();
+
+        Project project = mapper.map(request, Project.class);
+        project.setStatus(Status.valueOf(request.getStatus().toUpperCase()));
         project.setCreatedBy(userCurrent.getId());
         project.setIsActive(true);
+        project.setProjectOwnerId(request.getProjectOwnerId());
+        Project savedProject = projectRepository.save(project);
+        Long projectId = savedProject.getId();
+        saveProjectFiles(projectId, request.getProjectFiles());
+        saveProjectMedias(projectId, request.getProjectMedias());
+        saveProjectCategoryIds(projectId, request.getProjectCategoryIds());
+        saveProjectSurveys(projectId, request.getSurveys());
 
-        projectRepository.save(project);
+
         log.info("Created new Project  - {}", project);
         auditTrailService
                 .logEvent(project.getName(),
@@ -145,33 +142,33 @@ public class ProjectService {
         return projects;
     }
 
-    public List<Project> findProjectByStatusAndCategory(String status, Long categoryId) {
-        validations.validateProjectStatus(status);
-        List<Project> projects = projectRepository.findByStatusAndProjectCategoryId(Status.valueOf(status), categoryId);
-        if (projects == null) {
-            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
-        }
-        projects.forEach(project -> {
-            setTransientFields(project);
-        });
-        return projects;
-    }
+//    public List<Project> findProjectByStatusAndCategory(String status, Long categoryId) {
+//        validations.validateProjectStatus(status);
+//        List<Project> projects = projectRepository.findByStatusAndProjectCategoryId(Status.valueOf(status), categoryId);
+//        if (projects == null) {
+//            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+//        }
+//        projects.forEach(project -> {
+//            setTransientFields(project);
+//        });
+//        return projects;
+//    }
 
-    public List<Project> findProjectByCategory(Long categoryId) {
-        List<Project> projects = projectRepository.findByProjectCategoryId(categoryId);
-        if (projects == null) {
-            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
-        }
-        projects.forEach(project -> {
-            setTransientFields(project);
-            project.setProjectCount(projects.size());
-        });
-        return projects;
-    }
+//    public List<Project> findProjectByCategory(Long categoryId) {
+//        List<Project> projects = projectRepository.findByProjectCategoryId(categoryId);
+//        if (projects == null) {
+//            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+//        }
+//        projects.forEach(project -> {
+//            setTransientFields(project);
+//            project.setProjectCount(projects.size());
+//        });
+//        return projects;
+//    }
 
-    public Page<Project> findAll(String name, String status, String category, PageRequest pageRequest ) {
+    public Page<Project> findAll(String name, String status, PageRequest pageRequest ) {
         if(Objects.nonNull(status)) validations.validateProjectStatus(status.toUpperCase());
-        Page<Project> projects = projectRepository.findProjects(name, Objects.nonNull(status) ? status.toUpperCase() : null, category, pageRequest);
+        Page<Project> projects = projectRepository.findProjects(name, Objects.nonNull(status) ? status.toUpperCase() : null, pageRequest);
         if (projects == null) {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
         }
@@ -181,6 +178,33 @@ public class ProjectService {
         return projects;
 
     }
+
+    public List<Project> findAll() {
+//        if(Objects.nonNull(status)) validations.validateProjectStatus(status.toUpperCase());
+        List<Project> projects = projectRepository.findAll();
+        if (Objects.nonNull(projects)) {
+
+            projects.forEach(project -> {
+                setTransientFields(project);
+            });
+        }
+        return projects;
+
+    }
+
+//    public List<Project> findProjectByCategory(Long categoryId) {
+//        List<Project> projects = projectRepository.findByProjectCategoryId(categoryId);
+//        if (projects == null) {
+//            throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+//        }
+//        projects.forEach(project -> {
+//            setTransientFields(project);
+//            project.setProjectCount(projects.size());
+//        });
+//        return projects;
+//    }
+
+
 
     public void enableDisableState (EnableDisableDto request){
         User userCurrent = TokenService.getCurrentUserFromSecurityContext();
@@ -225,21 +249,56 @@ public class ProjectService {
                 project.setClientType(projectOwner.getIsCorp() ? "Corporate" : "Individual");
             }
         }
+        Long projectId = project.getId();
 
-        if (project.getProjectCategoryId() != null) {
-            ProjectCategory projectCategory = projectCategoryRepository.findById(project.getProjectCategoryId()).get();
-            project.setProjectCategory(projectCategory.getName());
-            project.setProjectCategoryDescription(projectCategory.getDescription());
-        }
+        List<ProjectProjectCategory> projectProjectCategories = projectProjectCategoryRepository.findByProjectId(projectId);
+        List<String> projectCategories = new ArrayList<>(projectProjectCategories.size());
+        projectProjectCategories.forEach(projectProjectCategory -> {
+            projectCategories.add(projectCategoryRepository.findById(projectProjectCategory.getProjectCategoryId()).get().getName());
+        });
+        project.setProjectCategories(projectCategories);
+
+        List<ProjectMedia> savedProjectMedias = projectMediaRepository.findByProjectId(projectId);
+        List<String> projectMedias = new ArrayList<>(savedProjectMedias.size());
+        savedProjectMedias.forEach(projectMedia -> {
+            projectMedias.add(projectMedia.getMedia());
+        });
+        project.setProjectMedias(projectMedias);
+
+        List<ProjectFile> savedProjectFiles = projectFileRepository.findByProjectId(projectId);
+        List<String> projectFiles = new ArrayList<>(savedProjectFiles.size());
+        savedProjectFiles.forEach(projectFile -> {
+            projectFiles.add(projectFile.getFile());
+        });
+        project.setProjectFiles(projectFiles);
+
+        List<ProjectSurvey> savedProjectSurveys = projectSurveyRepository.findByProjectId(projectId);
+        List<String> projectSurveys = new ArrayList<>(savedProjectSurveys.size());
+        savedProjectSurveys.forEach(projectSurvey -> {
+            projectSurveys.add(projectSurvey.getSurvey());
+        });
+        project.setProjectSurveys(projectSurveys);
     }
 
+    private int getDistinctCategories(Long projectOwnerId) {
+        List<Project> projects = projectRepository.findByProjectOwnerId(projectOwnerId);
+        Map<Long, String> categories = new HashMap<>();
+        projects.forEach(project -> {
+            List<ProjectProjectCategory> projectCategories = projectProjectCategoryRepository.findByProjectId(project.getId());
+            projectCategories.forEach(projectCategory -> {
+                Long projectCategoryId = projectCategory.getProjectCategoryId();
+                categories.put(projectCategoryId, projectCategoryRepository.findById(projectCategoryId).get().getName());
+            });
+        });
+        return categories.size();
+    }
 
 
     public HashMap<String, Integer> getProjectSummary(Long projectOwnerId) {
         validateProjectOwner(projectOwnerId);
 
         int totalProjects = projectRepository.findByProjectOwnerId(projectOwnerId).size();
-        int totalCategories = projectRepository.getDistinctCategoryForProjectOwner(projectOwnerId).size();
+        int totalCategories = getDistinctCategories(projectOwnerId);
         int enumerators = projectOwnerEnumeratorRepository.findProjectOwnerEnumeratorByProjectOwnerId(projectOwnerId).size();;
         int submissions = submissionService.getSurveysForProject(projectRepository.findByProjectOwnerId(projectOwnerId), null);
         int activeProjects = projectRepository.findByProjectOwnerIdAndStatus(projectOwnerId, Status.ONGOING).size();
@@ -285,5 +344,35 @@ public class ProjectService {
         projectOwnerRepository.findById(projectOwnerId)
                 .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                         "Requested Project Owner Id does not exist!"));
+    }
+
+    private void saveProjectCategoryIds(Long projectId, List<Long> projectCategoryIds) {
+        for (Long projectCategory : projectCategoryIds ) {
+            ProjectProjectCategory projectProjectCategory = new ProjectProjectCategory();
+            projectProjectCategory.setProjectId(projectId);
+            projectProjectCategory.setProjectCategoryId(projectCategory);
+            projectProjectCategoryRepository.save(projectProjectCategory);
+        }
+    }
+
+    private void saveProjectSurveys(Long projectId, List<String> surveys ) {
+        for (String survey : surveys ) {
+            ProjectSurvey projectSurvey = new ProjectSurvey(projectId, survey);
+            projectSurveyRepository.save(projectSurvey);
+        }
+    }
+
+    private void saveProjectMedias(Long projectId, List<String> medias ) {
+        for (String media : medias ) {
+            ProjectMedia projectMedia = new ProjectMedia(projectId, media);
+            projectMediaRepository.save(projectMedia);
+        }
+    }
+
+    private void saveProjectFiles(Long projectId, List<String> files) {
+        for (String file : files ) {
+            ProjectFile projectFile = new ProjectFile(projectId, file);
+            projectFileRepository.save(projectFile);
+        }
     }
 }
