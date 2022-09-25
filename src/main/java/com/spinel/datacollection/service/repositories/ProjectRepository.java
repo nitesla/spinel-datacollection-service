@@ -20,9 +20,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByStatus(Status status);
 
-    List<Project> findByStatusAndProjectCategoryId(Status status, Long categoryId);
+//    List<Project> findByStatusAndProjectCategoryId(Status status, Long categoryId);
 
-    List<Project> findByProjectCategoryId(Long categoryId);
+//    List<Project> findByProjectCategoryId(Long categoryId);
 
     Page<Project> findByProjectOwnerId(Long projectOwnerId, Pageable pageable);
 
@@ -38,17 +38,20 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByIsActive(Boolean isActive);
 
-    @Query(value = "SELECT Project.* from Project, ProjectCategory WHERE " +
-            "Project.projectCategoryId=ProjectCategory.id " +
-            "AND ((:name IS NULL) OR (:name IS NOT NULL AND Project.name like %:name%)) " +
-            "AND ((:status IS NULL) OR (:status IS NOT NULL AND Project.status = :status)) " +
-            "AND ((:category IS NULL) OR (:category IS NOT NULL AND ProjectCategory .name LIKE %:category%))", nativeQuery = true)
-    Page<Project> findProjects(@Param("name") String name, String status, String category,
+//    @Query(value = "SELECT Project.* from Project, ProjectCategory WHERE " +
+//            "Project.projectCategoryId=ProjectCategory.id " +
+//            "AND ((:name IS NULL) OR (:name IS NOT NULL AND Project.name like %:name%)) " +
+//            "AND ((:status IS NULL) OR (:status IS NOT NULL AND Project.status = :status)) " +
+//            "AND ((:category IS NULL) OR (:category IS NOT NULL AND ProjectCategory .name LIKE %:category%))", nativeQuery = true)
+//    Page<Project> findProjects(@Param("name") String name, String status, String category,
+//                               Pageable pageable);
+
+    @Query(value = "SELECT * from Project WHERE  " +
+            "((:name IS NULL) OR (:name IS NOT NULL AND Project.name like %:name%)) " +
+            "AND ((:status IS NULL) OR (:status IS NOT NULL AND Project.status = :status)) ", nativeQuery = true)
+    Page<Project> findProjects(@Param("name") String name, String status,
                                Pageable pageable);
 
     List<Project> findAll();
-
-    @Query(value = "SELECT * FROM  Project WHERE projectOwnerId = :projectOwnerId GROUP BY projectCategoryId", nativeQuery = true)
-    List<Project> getDistinctCategoryForProjectOwner(Long projectOwnerId);
 
 }
