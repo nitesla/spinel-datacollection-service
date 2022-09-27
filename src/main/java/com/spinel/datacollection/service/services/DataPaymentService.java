@@ -2,11 +2,9 @@ package com.spinel.datacollection.service.services;
 
 
 import com.spinel.datacollection.core.dto.payment.request.*;
-import com.spinel.datacollection.core.dto.payment.response.TotalTransactionResponse;
-import com.spinel.datacollection.core.dto.payment.response.TransactionResponse;
+import com.spinel.datacollection.core.dto.payment.response.*;
 import com.spinel.datacollection.core.dto.request.FundWalletRequest;
 import com.spinel.datacollection.core.dto.response.PaymentResponseDto;
-import com.spinel.datacollection.core.dto.payment.response.InitializeTransactionResponse;
 import com.spinel.datacollection.core.models.Payment;
 import com.spinel.datacollection.service.helper.IntegratedPaymentService;
 import com.spinel.datacollection.service.helper.Validations;
@@ -111,6 +109,16 @@ public class DataPaymentService {
     public TransactionResponse fetchTransactions(String paymentProviderId, String paymentProvider) {
         PaymentService paymentService = validatePaymentProvider(paymentProvider);
         return paymentService.fetchTransaction(paymentProviderId);
+    }
+
+    public ResolveAccountNumberResponse resolveAccountNumber(ResolveAccountNumber resolveAccountNumber) {
+        PaymentService paymentService = validatePaymentProvider(resolveAccountNumber.getPaymentProvider());
+        return paymentService.resolveAccountNumber(resolveAccountNumber);
+    }
+
+    public SingleTransferResponse singleTransfer(SingleTransfer singleTransfer) {
+        PaymentService paymentService = validatePaymentProvider(singleTransfer.getPaymentProvider());
+        return paymentService.singleTransfer(singleTransfer);
     }
 
     private String generateReference() {

@@ -1,9 +1,7 @@
 package com.spinel.datacollection.service.payment;
 
 import com.spinel.datacollection.core.dto.payment.request.*;
-import com.spinel.datacollection.core.dto.payment.response.InitializeTransactionResponse;
-import com.spinel.datacollection.core.dto.payment.response.TotalTransactionResponse;
-import com.spinel.datacollection.core.dto.payment.response.TransactionResponse;
+import com.spinel.datacollection.core.dto.payment.response.*;
 
 import java.util.List;
 
@@ -13,6 +11,9 @@ public interface PaymentService {
     TotalTransactionResponse totalTransactions(TotalTransaction totalTransaction);
     List<TransactionResponse> listTransactions(ListTransactions listTransactions);
     TransactionResponse fetchTransaction(String transactionId);
+    Object validateCustomer(ValidateCustomer validateCustomer);
+    ResolveAccountNumberResponse resolveAccountNumber(ResolveAccountNumber resolveAccountNumber);
+    SingleTransferResponse singleTransfer(SingleTransfer singleTransfer);
 
 
 }

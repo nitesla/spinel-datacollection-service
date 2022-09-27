@@ -2,14 +2,16 @@ package com.spinel.datacollection.service.integrations.paystack.service.serviceI
 
 
 import com.spinel.datacollection.core.dto.payment.request.*;
-import com.spinel.datacollection.core.dto.payment.response.InitializeTransactionResponse;
-import com.spinel.datacollection.core.dto.payment.response.TotalTransactionResponse;
-import com.spinel.datacollection.core.dto.payment.response.TransactionResponse;
+import com.spinel.datacollection.core.dto.payment.response.*;
 import com.spinel.datacollection.core.integrations.paystack.dto.response.*;
+import com.spinel.datacollection.core.integrations.paystack.dto.response.singletransfer.PayStackSingleTransferResponse;
+import com.spinel.datacollection.core.integrations.paystack.dto.response.transferrecipient.PaystackTransferRecipientResponse;
 import com.spinel.datacollection.service.integrations.paystack.enums.PayStackCurrency;
 import com.spinel.datacollection.service.integrations.paystack.enums.PayStackTransactionStatus;
 import com.spinel.datacollection.service.payment.PaymentService;
+import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.helpers.API;
+import com.spinel.framework.utils.CustomResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -44,6 +47,9 @@ public class PayStackServiceImpl implements PaymentService {
 
     @Value("${paystack.total.transaction.url}")
     private String totalTransactionUrl;
+
+    @Value("${paystack.base.url}")
+    private String baseUrl;
 
     private final API api;
     private final ModelMapper mapper;
@@ -136,6 +142,124 @@ public class PayStackServiceImpl implements PaymentService {
                 .message(fetchTransactionResponse.getMessage())
                 .build();
     }
+
+    @Override
+    public Object validateCustomer(ValidateCustomer validateCustomer) {
+        String url = baseUrl + "customer/" + validateCustomer.getCustomerCode() + "/identification";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("country", validateCustomer.getCountry());
+        requestBody.put("type", validateCustomer.getType());
+        requestBody.put("account_number", validateCustomer.getAccountNumber());
+        requestBody.put("bvn", validateCustomer.getBvn());
+        requestBody.put("bank_code", validateCustomer.getBankCode());
+        requestBody.put("first_name", validateCustomer.getFirstName());
+        requestBody.put("last_name", validateCustomer.getLastName());
+
+        return api.post(url, requestBody, Object.class, getHeader());
+    }
+
+    @Override
+    public ResolveAccountNumberResponse resolveAccountNumber(ResolveAccountNumber resolveAccountNumber) {
+        PayStackResolveAccountNumberResponse response = resolveAccountNumber(
+                resolveAccountNumber.getAccountNumber(), resolveAccountNumber.getBankCode());
+
+        return ResolveAccountNumberResponse.builder()
+                .message(response.getMessage())
+                .status(response.isStatus())
+                .accountName(response.getData().getAccount_name())
+                .accountNumber(response.getData().getAccount_number())
+                .bankId(String.valueOf(response.getData().getBank_id()))
+                .build();
+    }
+
+    @Override
+    public SingleTransferResponse singleTransfer(SingleTransfer singleTransfer) {
+        //resolve account number
+        PayStackResolveAccountNumberResponse resolveAccountNumberResponse = resolveAccountNumber(
+                singleTransfer.getAccountNumber(), singleTransfer.getBankCode()
+        );
+
+        //create a transfer recipient
+        PaystackTransferRecipientResponse transferRecipientResponse = createTransferRecipient(
+                singleTransfer.getType(),
+                resolveAccountNumberResponse.getData().getAccount_name(),
+                resolveAccountNumberResponse.getData().getAccount_number(),
+                singleTransfer.getBankCode(),
+                singleTransfer.getCurrency()
+        );
+
+        //initiate a transfer
+        PayStackSingleTransferResponse response = singleTransfer(
+                singleTransfer.getSource(),
+                singleTransfer.getAmount(),
+                transferRecipientResponse.getData().getRecipient_code(),
+                singleTransfer.getDescription()
+        );
+        //listen for status
+
+        return SingleTransferResponse.builder()
+                .message(response.getMessage())
+                .reference(response.getData().getReference())
+                .domain(response.getData().getDomain())
+                .currency(response.getData().getCurrency())
+                .amount(response.getData().getAmount())
+                .source(response.getData().getSource())
+                .description(response.getData().getReason())
+                .status(response.getData().getStatus())
+                .transferCode(response.getData().getTransfer_code())
+                .id(response.getData().getId())
+                .recipient(response.getData().getRecipient())
+                .createdAt(response.getData().getCreatedAt())
+                .updatedAt(response.getData().getUpdatedAt())
+                .build();
+    }
+
+    private PayStackResolveAccountNumberResponse resolveAccountNumber(String accountNumber, String bankCode) {
+        String url = baseUrl + "bank/resolve";
+        try {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                    .queryParam("account_number", accountNumber)
+                    .queryParam("bank_code", bankCode);
+            return api.get(builder.toUriString(), PayStackResolveAccountNumberResponse.class, getHeader());
+        } catch (Exception e) {
+            log.error("Error occurred while resolving account number: {}", e.getMessage());
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Error occurred while resolving account number");
+        }
+    }
+
+    private PaystackTransferRecipientResponse createTransferRecipient(String type, String name, String accountNumber, String bankCode, String currency) {
+        String url = baseUrl + "transferrecipient";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("type", type);
+        requestBody.put("name", name);
+        requestBody.put("account_number", accountNumber);
+        requestBody.put("bank_code", bankCode);
+        requestBody.put("currency", currency);
+        try {
+            return api.post(url, requestBody, PaystackTransferRecipientResponse.class, getHeader());
+        } catch (Exception e) {
+            log.error("Error occurred while creating transfer recipient: {}", e.getMessage());
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Error occurred while creating transfer recipient");
+        }
+    }
+
+    private PayStackSingleTransferResponse singleTransfer(String source, BigDecimal amount, String recipient, String reason) {
+        String url = baseUrl + "transfer";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("source", source);
+        requestBody.put("amount", amount.toString());
+        requestBody.put("recipient", recipient);
+        requestBody.put("reason", reason);
+        try {
+            return api.post(url, requestBody, PayStackSingleTransferResponse.class, getHeader());
+        } catch (Exception e) {
+            log.error("Error occurred during transfer: {}", e.getMessage());
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Error occurred during transfer");
+        }
+    }
+
+
 
     @Override
     public TotalTransactionResponse totalTransactions(TotalTransaction totalTransaction) {
