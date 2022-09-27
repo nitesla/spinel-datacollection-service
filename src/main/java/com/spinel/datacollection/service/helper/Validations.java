@@ -25,9 +25,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Objects;
+import java.util.*;
 
 @SuppressWarnings("All")
 @Slf4j
@@ -450,6 +448,11 @@ public class Validations {
     public void validateProject(ProjectDto projectDto) {
         if (projectDto.getName() == null || projectDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
+
+        List<Long> projectCategories = projectDto.getProjectCategoryIds();
+        if (projectCategories.size() > 3) {
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Project categories cannot be more than 3");
+        }
 
         for(Long projectCategoryId: projectDto.getProjectCategoryIds()) {
             projectCategoryRepository.findById(projectCategoryId)
