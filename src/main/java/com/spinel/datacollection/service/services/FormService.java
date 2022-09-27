@@ -4,8 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
 import com.spinel.datacollection.core.dto.request.FormDto;
+import com.spinel.datacollection.core.dto.request.GetRequestDto;
 import com.spinel.datacollection.core.dto.response.FormResponseDto;
 import com.spinel.datacollection.core.models.Form;
+import com.spinel.datacollection.service.helper.GenericSpecification;
+import com.spinel.datacollection.service.helper.SearchCriteria;
+import com.spinel.datacollection.service.helper.SearchOperation;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.FormRepository;
 import com.spinel.framework.exceptions.ConflictException;
@@ -15,12 +19,17 @@ import com.spinel.framework.service.TokenService;
 import com.spinel.framework.utils.CustomResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 
 /**
@@ -33,7 +42,7 @@ import java.util.List;
 @Service
 public class FormService {
 
-
+    @Autowired
     private FormRepository formRepository;
     private final ModelMapper mapper;
     private final ObjectMapper objectMapper;
@@ -125,12 +134,109 @@ public class FormService {
      * </summary>
      * <remarks>this method is responsible for getting all records in pagination</remarks>
      */
-    public Page<Form> findAll(String name,String version, String description, PageRequest pageRequest ){
-        Page<Form> form = formRepository.findForms(name,version, description,pageRequest);
-            if(form == null){
-                throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, " No record found !");
+    public Page<Form> findPaginated(GetRequestDto request) {
+        GenericSpecification<Form> genericSpecification = new GenericSpecification<Form>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+        SimpleDateFormat enUsFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+        SimpleDateFormat localFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("version")) {
+                    genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                    genericSpecification.add(new SearchCriteria("userId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
+                    genericSpecification.add(new SearchCriteria("projectId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
             }
-            return form;
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null) {
+////                if (filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+////                    try {
+////                        genericSpecification.add(new SearchCriteria("createdDate", localFormat.parse(filter.getStartDate()), SearchOperation.GREATER_THAN_EQUAL));
+//////                        genericSpecification.add(new SearchCriteria("createdDate", localFormat.parse(String.valueOf(filter.getEndDate())), SearchOperation.LESS_THAN_EQUAL));
+////                    } catch (ParseException e) {
+////                        throw new RuntimeException(e);
+////                    }
+////                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+
+        return formRepository.findAll(genericSpecification, pageRequest);
+
+
+    }
+
+    public List<Form> findList(GetRequestDto request) {
+        GenericSpecification<Form> genericSpecification = new GenericSpecification<Form>();
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("version")) {
+                    genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                    genericSpecification.add(new SearchCriteria("userId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
+                    genericSpecification.add(new SearchCriteria("projectId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null) {
+//                if (filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getStartDate(), SearchOperation.GREATER_THAN_EQUAL));
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getEndDate(), SearchOperation.LESS_THAN_EQUAL));
+//                }
+//            }
+        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        return formRepository.findAll(genericSpecification, sortType);
+
+
+    }
+
+
+    public Page<Form> getEntities(GetRequestDto request) {
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+        return formRepository.findAll(pageRequest);
     }
 
 
@@ -150,8 +256,8 @@ public class FormService {
 
     }
 
-    public List<Form> getAll(Boolean isActive, Long projectId, Long userId, Long projectOwnerId){
-        List<Form> forms = formRepository.findByIsActive(isActive, projectId, userId, projectOwnerId);
+    public List<Form> getAll(Boolean isActive, Long projectId, Long userId){
+        List<Form> forms = formRepository.findByIsActive(isActive, projectId, userId);
         return forms;
 
     }
