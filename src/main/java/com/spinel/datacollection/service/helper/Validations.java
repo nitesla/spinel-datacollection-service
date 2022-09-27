@@ -451,27 +451,33 @@ public class Validations {
         if (projectDto.getName() == null || projectDto.getName().isEmpty())
             throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Name cannot be empty");
 
-        if (projectDto.getIsLocationBased() == null)
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is location based cannot be empty");
-
-        if (!EnumUtils.isValidEnum(Status.class, projectDto.getStatus()))
+        for(Long projectCategoryId: projectDto.getProjectCategoryIds()) {
+            projectCategoryRepository.findById(projectCategoryId)
+                    .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Invalid Project CategoryId: " + projectCategoryId));
+        }
+        projectOwnerRepository.findById(projectDto.getProjectOwnerId())
+        .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+                " Enter a valid Project Owner id!"));
+        if (Objects.isNull(projectDto.getStatus()) || !EnumUtils.isValidEnum(Status.class, projectDto.getStatus().toUpperCase()))
             throw new BadRequestException(CustomResponseCode.NOT_FOUND_EXCEPTION, "Enter a valid value for status");
 
-        if (projectDto.getStartDate() == null || projectDto.getStartDate().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Start date cannot be empty");
-
-        if (projectDto.getEndDate() == null || projectDto.getEndDate().isEmpty())
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "End date cannot be empty");
-
-        projectOwnerRepository.findById(projectDto.getProjectOwnerId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Project Owner id!"));
+//        if (projectDto.getIsLocationBased() == null)
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Is location based cannot be empty");
+//
+//
+//
+//        if (projectDto.getStartDate() == null || projectDto.getStartDate().isEmpty())
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Start date cannot be empty");
+//
+//        if (projectDto.getEndDate() == null || projectDto.getEndDate().isEmpty())
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "End date cannot be empty");
+//
 //        projectCategoryRepository.findById(projectDto.getProjectCategoryId())
 //                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
 //                        " Enter a valid Project Category id!"));
-        sectorRepository.findById(projectDto.getSectorId())
-                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
-                        " Enter a valid Sector id!"));
+//        sectorRepository.findById(projectDto.getSectorId())
+//                .orElseThrow(() -> new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
+//                        " Enter a valid Sector id!"));
     }
 
     public void validateDataSet(DataSetDto dataSetDto) {
