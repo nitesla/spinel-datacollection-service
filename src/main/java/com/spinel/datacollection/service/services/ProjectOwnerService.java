@@ -2,10 +2,6 @@ package com.spinel.datacollection.service.services;
 
 import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.dto.response.*;
-import com.spinel.datacollection.core.dto.response.CompleteProjectOwnerSignUpResponse;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerActivationResponse;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerResponseDto;
-import com.spinel.datacollection.core.dto.response.ProjectOwnerSignUpResponseDto;
 import com.spinel.datacollection.core.dto.wallet.CreateWalletDto;
 import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
@@ -495,10 +491,10 @@ public class ProjectOwnerService {
             throw new NotFoundException(CustomResponseCode.NOT_FOUND_EXCEPTION,
                     "Project owner does not exist for this user Id");
         }
-        if(projectOwner.getIsActive()){
-            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,
-                    "Project Owner account is already active");
-        }
+//        if(projectOwner.getIsActive()){
+//            throw new BadRequestException(CustomResponseCode.BAD_REQUEST,
+//                    "Project Owner account is already active");
+//        }
 
         projectOwner.setIsActive(true);
         projectOwnerRepository.save(projectOwner);
