@@ -170,11 +170,11 @@ public class AuthenticationService {
             throw new UnauthorizedException(CustomResponseCode.UNAUTHORIZED,
                     "User Account Deactivated, please contact Administrator");
         }
-        if (user.getLoginAttempts() >= loginAttempts || user.getLockedDate() != null) {
-            // lock account after x failed attempts or locked date is not null
-            userService.lockLogin(user.getId());
-            throw new LockedException(CustomResponseCode.LOCKED_EXCEPTION, "This account has been locked, Kindly contact support");
-        }
+//        if (user.getLoginAttempts() >= loginAttempts || user.getLockedDate() != null) {
+//            // lock account after x failed attempts or locked date is not null
+//            userService.lockLogin(user.getId());
+//            throw new LockedException(CustomResponseCode.LOCKED_EXCEPTION, "This account has been locked, Kindly contact support");
+//        }
     }
 
     private Enumerator userIsEnumerator(User user) {
