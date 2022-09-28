@@ -79,6 +79,15 @@ public class ProjectService {
         project.setCreatedBy(userCurrent.getId());
         project.setIsActive(true);
         project.setProjectOwnerId(request.getProjectOwnerId());
+
+        if(projectCategoryIds.size() > 0)
+            project.setProjectCategory(projectCategoryRepository.findById(projectCategoryIds.get(0)).get().getName());
+        if(projectCategoryIds.size() > 1)
+            project.setProjectCategory2(projectCategoryRepository.findById(projectCategoryIds.get(1)).get().getName());
+        if(projectCategoryIds.size() > 2)
+            project.setProjectCategory3(projectCategoryRepository.findById(projectCategoryIds.get(2)).get().getName());
+
+
         Project savedProject = projectRepository.save(project);
         Long projectId = savedProject.getId();
         saveProjectFiles(projectId, request.getProjectFiles());
@@ -250,13 +259,6 @@ public class ProjectService {
             }
         }
         Long projectId = project.getId();
-
-        List<ProjectProjectCategory> projectProjectCategories = projectProjectCategoryRepository.findByProjectId(projectId);
-        List<String> projectCategories = new ArrayList<>(projectProjectCategories.size());
-        projectProjectCategories.forEach(projectProjectCategory -> {
-            projectCategories.add(projectCategoryRepository.findById(projectProjectCategory.getProjectCategoryId()).get().getName());
-        });
-        project.setProjectCategories(projectCategories);
 
         List<ProjectMedia> savedProjectMedias = projectMediaRepository.findByProjectId(projectId);
         List<String> projectMedias = new ArrayList<>(savedProjectMedias.size());
