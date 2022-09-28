@@ -11,9 +11,12 @@ public interface PaymentService {
     TotalTransactionResponse totalTransactions(TotalTransaction totalTransaction);
     List<TransactionResponse> listTransactions(ListTransactions listTransactions);
     TransactionResponse fetchTransaction(String transactionId);
-    Object validateCustomer(ValidateCustomer validateCustomer);
+    ValidateCustomerResponse validateCustomer(ValidateCustomer validateCustomer);
     ResolveAccountNumberResponse resolveAccountNumber(ResolveAccountNumber resolveAccountNumber);
     SingleTransferResponse singleTransfer(SingleTransfer singleTransfer);
+    CreateSubscriptionResponse createSubscription(CreateSubscription createSubscription);
+    ResolveCardBinResponse resolveCardBin(ResolveCardBin resolveCardBin);
+    ChargeAuthorizationResponse chargeAuthorization(ChargeAuthorization chargeAuthorization);
 
 
 }

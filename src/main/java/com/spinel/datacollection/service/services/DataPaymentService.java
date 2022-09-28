@@ -121,6 +121,26 @@ public class DataPaymentService {
         return paymentService.singleTransfer(singleTransfer);
     }
 
+    public ValidateCustomerResponse validateCustomer(ValidateCustomer validateCustomer) {
+        PaymentService paymentService = validatePaymentProvider(validateCustomer.getPaymentProvider());
+        return paymentService.validateCustomer(validateCustomer);
+    }
+
+    public CreateSubscriptionResponse createSubscription(CreateSubscription createSubscription) {
+        PaymentService paymentService = validatePaymentProvider(createSubscription.getPaymentProvider());
+        return paymentService.createSubscription(createSubscription);
+    }
+
+    public ResolveCardBinResponse resolveCardBin(ResolveCardBin resolveCardBin) {
+        PaymentService paymentService = validatePaymentProvider(resolveCardBin.getPaymentProvider());
+        return paymentService.resolveCardBin(resolveCardBin);
+    }
+
+    public ChargeAuthorizationResponse chargeAuthorization(ChargeAuthorization chargeAuthorization) {
+        PaymentService paymentService = validatePaymentProvider(chargeAuthorization.getPaymentProvider());
+        return paymentService.chargeAuthorization(chargeAuthorization);
+    }
+
     private String generateReference() {
         String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         Random rnd = new Random();
@@ -133,6 +153,10 @@ public class DataPaymentService {
     private PaymentService validatePaymentProvider(String paymentProvider) {
         IntegratedPaymentService integratedPaymentService = IntegratedPaymentService.validatePaymentService(paymentProvider.toLowerCase());
         return factoryService.getPaymentService(integratedPaymentService);
+    }
+
+    public void paystackWebhookListener(String body) {
+        PaymentService paymentService = factoryService.getPaymentService(IntegratedPaymentService.PAYSTACK);
     }
 
 

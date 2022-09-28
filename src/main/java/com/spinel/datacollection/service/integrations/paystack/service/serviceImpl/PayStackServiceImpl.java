@@ -4,10 +4,14 @@ package com.spinel.datacollection.service.integrations.paystack.service.serviceI
 import com.spinel.datacollection.core.dto.payment.request.*;
 import com.spinel.datacollection.core.dto.payment.response.*;
 import com.spinel.datacollection.core.integrations.paystack.dto.response.*;
+import com.spinel.datacollection.core.integrations.paystack.dto.response.chargeauthorization.PayStackChargeAuthorizationResponse;
+import com.spinel.datacollection.core.integrations.paystack.dto.response.resolvecardbin.PayStackResolveCardBinResponse;
 import com.spinel.datacollection.core.integrations.paystack.dto.response.singletransfer.PayStackSingleTransferResponse;
+import com.spinel.datacollection.core.integrations.paystack.dto.response.subscription.PayStackCreateSubscriptionPlanResponse;
 import com.spinel.datacollection.core.integrations.paystack.dto.response.transferrecipient.PaystackTransferRecipientResponse;
 import com.spinel.datacollection.service.integrations.paystack.enums.PayStackCurrency;
 import com.spinel.datacollection.service.integrations.paystack.enums.PayStackTransactionStatus;
+import com.spinel.datacollection.service.integrations.paystack.enums.SubscriptionPlanInterval;
 import com.spinel.datacollection.service.payment.PaymentService;
 import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.helpers.API;
@@ -33,20 +37,20 @@ public class PayStackServiceImpl implements PaymentService {
     @Value("${paystack.secret.key}")
     private String secretKey;
 
-    @Value("${paystack.initialize.transaction.url}")
-    private String initializeTransactionUrl;
-
-    @Value("${paystack.verify.transaction.url}")
-    private String verifyTransactionUrl;
-
-    @Value("${paystack.list.transaction.url}")
-    private String listTransactionUrl;
-
-    @Value("${paystack.fetch.transaction.url}")
-    private String fetchTransactionUrl;
-
-    @Value("${paystack.total.transaction.url}")
-    private String totalTransactionUrl;
+//    @Value("${paystack.initialize.transaction.url}")
+//    private String initializeTransactionUrl;
+//
+//    @Value("${paystack.verify.transaction.url}")
+//    private String verifyTransactionUrl;
+//
+//    @Value("${paystack.list.transaction.url}")
+//    private String listTransactionUrl;
+//
+//    @Value("${paystack.fetch.transaction.url}")
+//    private String fetchTransactionUrl;
+//
+//    @Value("${paystack.total.transaction.url}")
+//    private String totalTransactionUrl;
 
     @Value("${paystack.base.url}")
     private String baseUrl;
@@ -70,12 +74,12 @@ public class PayStackServiceImpl implements PaymentService {
 
 
 
-        PayStackResponse response = api.post(initializeTransactionUrl, requestBody, PayStackResponse.class, getHeader());
+        PayStackResponse response = api.post(baseUrl + "transaction/initialize", requestBody, PayStackResponse.class, getHeader());
         PayStackInitializeTransactionDataResponse dataResponse = mapper.map(response.getData(), PayStackInitializeTransactionDataResponse.class);
         InitializeTransactionResponse initializeTransactionResponse = new InitializeTransactionResponse();
         initializeTransactionResponse.setReference(dataResponse.getReference());
         initializeTransactionResponse.setMessage(response.getMessage());
-        initializeTransactionResponse.setStatus(response.getStatus());
+        initializeTransactionResponse.setStatus(response.isStatus());
         initializeTransactionResponse.setAccessCode(dataResponse.getAccess_code());
         initializeTransactionResponse.setUrl(dataResponse.getAuthorization_url());
         return initializeTransactionResponse;
@@ -83,7 +87,7 @@ public class PayStackServiceImpl implements PaymentService {
 
     @Override
     public TransactionResponse verifyTransaction(VerifyTransaction verifyTransaction) {
-        String url = verifyTransactionUrl + verifyTransaction.getReference();
+        String url = baseUrl + "transaction/verify/" + verifyTransaction.getReference();
         PayStackVerifyTransactionResponse payStackResponse = api.get(url, PayStackVerifyTransactionResponse.class, getHeader());
 
         DateTimeFormatter formatter =
@@ -106,7 +110,7 @@ public class PayStackServiceImpl implements PaymentService {
         if(Objects.nonNull(listTransactions.getStatus())) {
             PayStackTransactionStatus.isValidPayStackTransactionStatus(listTransactions.getStatus());
         }
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(listTransactionUrl)
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "transaction")
                 .queryParam("perPage", listTransactions.getPerPage())
                 .queryParam("page", listTransactions.getPage())
                 .queryParam("from", listTransactions.getFrom())
@@ -126,7 +130,7 @@ public class PayStackServiceImpl implements PaymentService {
 
     @Override
     public TransactionResponse fetchTransaction(String transactionId) {
-        String url = fetchTransactionUrl + Integer.parseInt(transactionId);
+        String url = baseUrl + "transaction" + Integer.parseInt(transactionId);
         PayStackFetchTransactionResponse fetchTransactionResponse = api.get(url, PayStackFetchTransactionResponse.class, getHeader());
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH);
@@ -144,7 +148,7 @@ public class PayStackServiceImpl implements PaymentService {
     }
 
     @Override
-    public Object validateCustomer(ValidateCustomer validateCustomer) {
+    public ValidateCustomerResponse validateCustomer(ValidateCustomer validateCustomer) {
         String url = baseUrl + "customer/" + validateCustomer.getCustomerCode() + "/identification";
 
         Map<String, String> requestBody = new HashMap<>();
@@ -156,7 +160,12 @@ public class PayStackServiceImpl implements PaymentService {
         requestBody.put("first_name", validateCustomer.getFirstName());
         requestBody.put("last_name", validateCustomer.getLastName());
 
-        return api.post(url, requestBody, Object.class, getHeader());
+        PayStackResponse response =  api.post(url, requestBody, PayStackResponse.class, getHeader());
+
+        return ValidateCustomerResponse.builder()
+                .status(response.isStatus())
+                .message(response.getMessage())
+                .build();
     }
 
     @Override
@@ -196,7 +205,6 @@ public class PayStackServiceImpl implements PaymentService {
                 transferRecipientResponse.getData().getRecipient_code(),
                 singleTransfer.getDescription()
         );
-        //listen for status
 
         return SingleTransferResponse.builder()
                 .message(response.getMessage())
@@ -213,6 +221,9 @@ public class PayStackServiceImpl implements PaymentService {
                 .createdAt(response.getData().getCreatedAt())
                 .updatedAt(response.getData().getUpdatedAt())
                 .build();
+
+
+        //listen for status
     }
 
     private PayStackResolveAccountNumberResponse resolveAccountNumber(String accountNumber, String bankCode) {
@@ -262,8 +273,114 @@ public class PayStackServiceImpl implements PaymentService {
 
 
     @Override
+    public CreateSubscriptionResponse createSubscription(CreateSubscription request) {
+        //create a plan
+        PayStackCreateSubscriptionPlanResponse createPlan = createAPlan(
+                request.getName(),
+                request.getInterval(),
+                request.getAmount()
+        );
+
+        //create a subscription
+        PayStackInitializeTransactionResponse response = createSubscription(
+                request.getEmail(),
+                createPlan.getData().getAmount(),
+                createPlan.getData().getPlan_code()
+        );
+
+        return CreateSubscriptionResponse.builder()
+                .reference(response.getData().getReference())
+                .status(Boolean.parseBoolean(response.getStatus()))
+                .accessCode(response.getData().getAccess_code())
+                .url(response.getData().getAuthorization_url())
+                .message(response.getMessage())
+                .amount(createPlan.getData().getAmount())
+                .build();
+
+        //listen for status
+    }
+
+    @Override
+    public ResolveCardBinResponse resolveCardBin(ResolveCardBin resolveCardBin) {
+        String url = baseUrl + "decision/bin/" + resolveCardBin.getPinDigits();
+
+        PayStackResolveCardBinResponse response =
+                api.get(url, PayStackResolveCardBinResponse.class, getHeader());
+
+        return ResolveCardBinResponse.builder()
+                .status(response.isStatus())
+                .message(response.getMessage())
+                .bin(response.getData().getBin())
+                .brand(response.getData().getBrand())
+                .subBrand(response.getData().getSub_brand())
+                .countryCode(response.getData().getCountry_code())
+                .countryName(response.getData().getCountry_name())
+                .cardType(response.getData().getCard_type())
+                .bank(response.getData().getBank())
+                .linkedBankId(response.getData().getLinked_bank_id())
+                .build();
+    }
+
+    @Override
+    public ChargeAuthorizationResponse chargeAuthorization(ChargeAuthorization chargeAuthorization) {
+        String url = baseUrl + "transaction/charge_authorization";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("authorization_code", chargeAuthorization.getAuthorizationCode());
+        requestBody.put("email", chargeAuthorization.getEmail());
+        requestBody.put("amount", chargeAuthorization.getAmount().toString());
+
+        PayStackChargeAuthorizationResponse response =
+                api.post(url, requestBody, PayStackChargeAuthorizationResponse.class, getHeader());
+
+        return ChargeAuthorizationResponse.builder()
+                .status(response.isStatus())
+                .message(response.getMessage())
+                .amount(response.getData().getAmount())
+                .transactionDate(response.getData().getTransaction_date())
+                .reference(response.getData().getReference())
+                .gatewayResponse(response.getData().getGateway_response())
+                .authorizationCode(response.getData().getAuthorization().getAuthorization_code())
+                .bank(response.getData().getAuthorization().getBank())
+                .build();
+    }
+
+    private PayStackCreateSubscriptionPlanResponse createAPlan(String name, String interval, BigDecimal amount) {
+        String url = baseUrl + "plan";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("name", name);
+        requestBody.put("interval", SubscriptionPlanInterval.isValidPayStackInterval(interval).getAlias());
+        requestBody.put("amount", amount.toString());
+
+        try {
+            return api.post(url, requestBody, PayStackCreateSubscriptionPlanResponse.class, getHeader());
+        } catch (Exception e) {
+            log.error("Error occurred while creating subscription plan: {}", e.getMessage());
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Error occurred while creating subscription plan");
+        }
+    }
+
+    private PayStackInitializeTransactionResponse createSubscription(String email, BigDecimal amount, String plan) {
+        String url = baseUrl + "transaction/initialize";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("email", email);
+        requestBody.put("plan", plan);
+        requestBody.put("amount", amount.toString());
+
+        try {
+            return api.post(url, requestBody, PayStackInitializeTransactionResponse.class, getHeader());
+        } catch (Exception e) {
+            log.error("Error occurred while creating subscription: {}", e.getMessage());
+            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "Error occurred while creating subscription");
+        }
+    }
+
+
+    @Override
     public TotalTransactionResponse totalTransactions(TotalTransaction totalTransaction) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(totalTransactionUrl)
+        String url = baseUrl + "transaction/totals";
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("perPage", totalTransaction.getPerPage())
                 .queryParam("page", totalTransaction.getPage())
                 .queryParam("from", totalTransaction.getFrom())
