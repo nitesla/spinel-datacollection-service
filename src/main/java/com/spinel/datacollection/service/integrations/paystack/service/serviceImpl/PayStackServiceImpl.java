@@ -72,9 +72,12 @@ public class PayStackServiceImpl implements PaymentService {
         requestBody.put("currency", initializeTransaction.getCurrency());
         requestBody.put("reference", initializeTransaction.getReference());
 
+        String url = baseUrl + "transaction/initialize";
+        log.info("initialize request url: {}", url);
 
 
-        PayStackResponse response = api.post(baseUrl + "transaction/initialize", requestBody, PayStackResponse.class, getHeader());
+
+        PayStackResponse response = api.post(url, requestBody, PayStackResponse.class, getHeader());
         PayStackInitializeTransactionDataResponse dataResponse = mapper.map(response.getData(), PayStackInitializeTransactionDataResponse.class);
         InitializeTransactionResponse initializeTransactionResponse = new InitializeTransactionResponse();
         initializeTransactionResponse.setReference(dataResponse.getReference());
