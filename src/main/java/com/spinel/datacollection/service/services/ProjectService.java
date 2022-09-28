@@ -2,11 +2,15 @@ package com.spinel.datacollection.service.services;
 
 
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
+import com.spinel.datacollection.core.dto.request.GetRequestDto;
 import com.spinel.datacollection.core.dto.request.ProjectDto;
 import com.spinel.datacollection.core.dto.response.ProjectResponseDto;
 import com.spinel.datacollection.core.enums.Status;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
 import com.spinel.datacollection.core.models.*;
+import com.spinel.datacollection.service.helper.GenericSpecification;
+import com.spinel.datacollection.service.helper.SearchCriteria;
+import com.spinel.datacollection.service.helper.SearchOperation;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.*;
 import com.spinel.framework.exceptions.BadRequestException;
@@ -29,6 +33,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @SuppressWarnings("ALL")
@@ -377,4 +384,171 @@ public class ProjectService {
             projectFileRepository.save(projectFile);
         }
     }
+
+    public Page<Project> findPaginated(GetRequestDto request) {
+        GenericSpecification<Project> genericSpecification = new GenericSpecification<Project>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        DateTimeFormatter formatter1 = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+        SimpleDateFormat enUsFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+        SimpleDateFormat localFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+
+
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isLocationBased")) {
+                    genericSpecification.add(new SearchCriteria("isLocationBased", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableTeams")) {
+                    genericSpecification.add(new SearchCriteria("enableTeams", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableGeoFencing")) {
+                    genericSpecification.add(new SearchCriteria("enableGeoFencing", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("enableEnumerators")) {
+                    genericSpecification.add(new SearchCriteria("enableEnumerators", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableAcceptanceCriteria")) {
+                    genericSpecification.add(new SearchCriteria("enableAcceptanceCriteria", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isPublic")) {
+                    genericSpecification.add(new SearchCriteria("isPublic", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isOpened")) {
+                    genericSpecification.add(new SearchCriteria("isOpened", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory2")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory2", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    LocalDateTime fromDate = LocalDateTime.from((filter.getFromDate().atZone(ZoneId.systemDefault()).toInstant()));
+//                    genericSpecification.add(new SearchCriteria("createdDate", fromDate, SearchOperation.GREATER_THAN_EQUAL));
+//
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    LocalDateTime toDate = LocalDateTime.from(filter.getToDate().atZone(ZoneId.systemDefault()).toInstant());
+//                    genericSpecification.add(new SearchCriteria("createdDate", toDate, SearchOperation.LESS_THAN_EQUAL));
+//
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+
+        return projectRepository.findAll(genericSpecification, pageRequest);
+
+
+    }
+
+    public List<Project> findList(GetRequestDto request) {
+        GenericSpecification<Project> genericSpecification = new GenericSpecification<Project>();
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isLocationBased")) {
+                    genericSpecification.add(new SearchCriteria("isLocationBased", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableTeams")) {
+                    genericSpecification.add(new SearchCriteria("enableTeams", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableGeoFencing")) {
+                    genericSpecification.add(new SearchCriteria("enableGeoFencing", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("enableEnumerators")) {
+                    genericSpecification.add(new SearchCriteria("enableEnumerators", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enableAcceptanceCriteria")) {
+                    genericSpecification.add(new SearchCriteria("enableAcceptanceCriteria", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isPublic")) {
+                    genericSpecification.add(new SearchCriteria("isPublic", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isOpened")) {
+                    genericSpecification.add(new SearchCriteria("isOpened", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory2")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory2", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getFromDate(), SearchOperation.GREATER_THAN_EQUAL));
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getToDate(), SearchOperation.LESS_THAN_EQUAL));
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        return projectRepository.findAll(genericSpecification, sortType);
+
+
+    }
+
+    public Page<Project> getEntities(GetRequestDto request) {
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+        return projectRepository.findAll(pageRequest);
+    }
+
 }
