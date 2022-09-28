@@ -437,6 +437,9 @@ public class ProjectService {
                 if (filter.getFilterParameter().equalsIgnoreCase("projectCategory2")) {
                     genericSpecification.add(new SearchCriteria("projectCategory2", filter.getFilterValue(), SearchOperation.EQUAL));
                 }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory3")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory3", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
             }
         });
 
@@ -515,6 +518,9 @@ public class ProjectService {
                 }
                 if (filter.getFilterParameter().equalsIgnoreCase("projectCategory2")) {
                     genericSpecification.add(new SearchCriteria("projectCategory2", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectCategory3")) {
+                    genericSpecification.add(new SearchCriteria("projectCategory3", filter.getFilterValue(), SearchOperation.EQUAL));
                 }
             }
         });

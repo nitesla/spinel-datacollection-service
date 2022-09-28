@@ -3,6 +3,7 @@ package com.spinel.datacollection.service.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.spinel.datacollection.core.dto.request.EnableDisableDto;
+import com.spinel.datacollection.core.dto.request.GetRequestDto;
 import com.spinel.datacollection.core.dto.request.SubmissionDto;
 import com.spinel.datacollection.core.dto.response.SubmissionResponseDto;
 import com.spinel.datacollection.core.enums.SubmissionStatus;
@@ -10,8 +11,7 @@ import com.spinel.datacollection.core.models.CommentDictionary;
 import com.spinel.datacollection.core.models.Project;
 import com.spinel.datacollection.core.models.ProjectEnumerator;
 import com.spinel.datacollection.core.models.Submission;
-import com.spinel.datacollection.service.helper.DateEnum;
-import com.spinel.datacollection.service.helper.Validations;
+import com.spinel.datacollection.service.helper.*;
 import com.spinel.datacollection.service.repositories.CommentDictionaryRepository;
 import com.spinel.datacollection.service.repositories.SubmissionRepository;
 import com.spinel.framework.exceptions.BadRequestException;
@@ -24,13 +24,14 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 
 /**
@@ -232,6 +233,142 @@ public class SubmissionService {
             }
         }
         return count;
+    }
+
+    public Page<Submission> findPaginated(GetRequestDto request) {
+        GenericSpecification<Submission> genericSpecification = new GenericSpecification<Submission>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        DateTimeFormatter formatter1 = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+        SimpleDateFormat enUsFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+        SimpleDateFormat localFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+
+
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("additionalInfo")) {
+                    genericSpecification.add(new SearchCriteria("additionalInfo", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("gprsLocation")) {
+                    genericSpecification.add(new SearchCriteria("gprsLocation", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("formId")) {
+                    genericSpecification.add(new SearchCriteria("formId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enumeratorId")) {
+                    genericSpecification.add(new SearchCriteria("enumeratorId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("commentId")) {
+                    genericSpecification.add(new SearchCriteria("commentId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("deviceId")) {
+                    genericSpecification.add(new SearchCriteria("deviceId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    LocalDateTime fromDate = LocalDateTime.from((filter.getFromDate().atZone(ZoneId.systemDefault()).toInstant()));
+//                    genericSpecification.add(new SearchCriteria("createdDate", fromDate, SearchOperation.GREATER_THAN_EQUAL));
+//
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    LocalDateTime toDate = LocalDateTime.from(filter.getToDate().atZone(ZoneId.systemDefault()).toInstant());
+//                    genericSpecification.add(new SearchCriteria("createdDate", toDate, SearchOperation.LESS_THAN_EQUAL));
+//
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+
+        return submissionRepository.findAll(genericSpecification, pageRequest);
+
+
+    }
+
+    public List<Submission> findList(GetRequestDto request) {
+        GenericSpecification<Submission> genericSpecification = new GenericSpecification<Submission>();
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("additionalInfo")) {
+                    genericSpecification.add(new SearchCriteria("additionalInfo", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("gprsLocation")) {
+                    genericSpecification.add(new SearchCriteria("gprsLocation", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("formId")) {
+                    genericSpecification.add(new SearchCriteria("formId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("enumeratorId")) {
+                    genericSpecification.add(new SearchCriteria("enumeratorId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("commentId")) {
+                    genericSpecification.add(new SearchCriteria("commentId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("deviceId")) {
+                    genericSpecification.add(new SearchCriteria("deviceId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getFromDate(), SearchOperation.GREATER_THAN_EQUAL));
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getToDate(), SearchOperation.LESS_THAN_EQUAL));
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        return submissionRepository.findAll(genericSpecification, sortType);
+
+
+    }
+
+    public Page<Submission> getEntities(GetRequestDto request) {
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+        return submissionRepository.findAll(pageRequest);
     }
 
 
