@@ -401,6 +401,8 @@ public class PayStackServiceImpl implements PaymentService {
         Map<String, String> map = new HashMap<>();
         map.put("Content-type", "application/json");
         map.put("Authorization", "Bearer " + secretKey);
+        map.put("Host", "");
+        map.put("user-agent", "Application");
         return map;
     }
 }
