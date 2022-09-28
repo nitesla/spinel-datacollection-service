@@ -2,17 +2,12 @@ package com.spinel.datacollection.service.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.spinel.datacollection.core.dto.request.CompleteSignupRequest;
-import com.spinel.datacollection.core.dto.request.EnableDisableDto;
-import com.spinel.datacollection.core.dto.request.EnumeratorDto;
-import com.spinel.datacollection.core.dto.request.EnumeratorSignUpDto;
+import com.spinel.datacollection.core.dto.request.*;
 import com.spinel.datacollection.core.dto.response.*;
 import com.spinel.datacollection.core.enums.*;
 import com.spinel.datacollection.core.models.Enumerator;
 import com.spinel.datacollection.core.models.LGA;
-import com.spinel.datacollection.service.helper.DateEnum;
-import com.spinel.datacollection.service.helper.DateFormatter;
-import com.spinel.datacollection.service.helper.Validations;
+import com.spinel.datacollection.service.helper.*;
 import com.spinel.datacollection.service.repositories.*;
 import com.spinel.framework.dto.requestDto.ActivateUserAccountDto;
 import com.spinel.framework.dto.requestDto.ChangePasswordDto;
@@ -39,15 +34,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 
 @SuppressWarnings("ALL")
@@ -601,4 +597,274 @@ public class EnumeratorService {
         repository.save(enumerator);
         return activateUserResponse;
     }
+
+    public Page<Enumerator> findPaginated(GetRequestDto request) {
+        GenericSpecification<Enumerator> genericSpecification = new GenericSpecification<Enumerator>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        DateTimeFormatter formatter1 = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+        SimpleDateFormat enUsFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+        SimpleDateFormat localFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+
+
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("firstName")) {
+                    genericSpecification.add(new SearchCriteria("firstName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("lastName")) {
+                    genericSpecification.add(new SearchCriteria("lastName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("referralCode")) {
+                    genericSpecification.add(new SearchCriteria("referralCode", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("cac")) {
+                    genericSpecification.add(new SearchCriteria("cac", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("address")) {
+                    genericSpecification.add(new SearchCriteria("address", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("refereeCode")) {
+                    genericSpecification.add(new SearchCriteria("refereeCode", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("corporateName")) {
+                    genericSpecification.add(new SearchCriteria("corporateName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("phone")) {
+                    genericSpecification.add(new SearchCriteria("phone", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("email")) {
+                    genericSpecification.add(new SearchCriteria("email", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("gender")) {
+                    genericSpecification.add(new SearchCriteria("gender", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("efficiency")) {
+                    genericSpecification.add(new SearchCriteria("efficiency", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("BVN")) {
+                    genericSpecification.add(new SearchCriteria("BVN", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idType")) {
+                    genericSpecification.add(new SearchCriteria("idType", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("frontOfId")) {
+                    genericSpecification.add(new SearchCriteria("frontOfId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("backOfId")) {
+                    genericSpecification.add(new SearchCriteria("backOfId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("verificationStatus")) {
+                    genericSpecification.add(new SearchCriteria("verificationStatus", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("verification")) {
+                    genericSpecification.add(new SearchCriteria("verification", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idCard")) {
+                    genericSpecification.add(new SearchCriteria("idCard", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idNumber")) {
+                    genericSpecification.add(new SearchCriteria("idNumber", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("verificationStatus")) {
+                    genericSpecification.add(new SearchCriteria("verificationStatus", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+
+
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isCorp")) {
+                    genericSpecification.add(new SearchCriteria("isCorp", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                    genericSpecification.add(new SearchCriteria("userId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectRoleId")) {
+                    genericSpecification.add(new SearchCriteria("projectRoleId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("lgaId")) {
+                    genericSpecification.add(new SearchCriteria("lgaId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("countryId")) {
+                    genericSpecification.add(new SearchCriteria("countryId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("userBankId")) {
+                    genericSpecification.add(new SearchCriteria("userBankId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("organisationTypeId")) {
+                    genericSpecification.add(new SearchCriteria("organisationTypeId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    LocalDateTime fromDate = LocalDateTime.from((filter.getFromDate().atZone(ZoneId.systemDefault()).toInstant()));
+//                    genericSpecification.add(new SearchCriteria("createdDate", fromDate, SearchOperation.GREATER_THAN_EQUAL));
+//
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    LocalDateTime toDate = LocalDateTime.from(filter.getToDate().atZone(ZoneId.systemDefault()).toInstant());
+//                    genericSpecification.add(new SearchCriteria("createdDate", toDate, SearchOperation.LESS_THAN_EQUAL));
+//
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+
+        return repository.findAll(genericSpecification, pageRequest);
+
+
+    }
+
+    public List<Enumerator> findList(GetRequestDto request) {
+        GenericSpecification<Enumerator> genericSpecification = new GenericSpecification<Enumerator>();
+
+        request.getFilterCriteria().forEach(filter-> {
+            if (filter.getFilterParameter() != null) {
+                if (filter.getFilterParameter().equalsIgnoreCase("firstName")) {
+                    genericSpecification.add(new SearchCriteria("firstName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("lastName")) {
+                    genericSpecification.add(new SearchCriteria("lastName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("referralCode")) {
+                    genericSpecification.add(new SearchCriteria("referralCode", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("status")) {
+                    genericSpecification.add(new SearchCriteria("status", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("cac")) {
+                    genericSpecification.add(new SearchCriteria("cac", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("address")) {
+                    genericSpecification.add(new SearchCriteria("address", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("refereeCode")) {
+                    genericSpecification.add(new SearchCriteria("refereeCode", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("corporateName")) {
+                    genericSpecification.add(new SearchCriteria("corporateName", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("phone")) {
+                    genericSpecification.add(new SearchCriteria("phone", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("email")) {
+                    genericSpecification.add(new SearchCriteria("email", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("gender")) {
+                    genericSpecification.add(new SearchCriteria("gender", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("efficiency")) {
+                    genericSpecification.add(new SearchCriteria("efficiency", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("BVN")) {
+                    genericSpecification.add(new SearchCriteria("BVN", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idType")) {
+                    genericSpecification.add(new SearchCriteria("idType", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("frontOfId")) {
+                    genericSpecification.add(new SearchCriteria("frontOfId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("backOfId")) {
+                    genericSpecification.add(new SearchCriteria("backOfId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("verificationStatus")) {
+                    genericSpecification.add(new SearchCriteria("verificationStatus", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("verification")) {
+                    genericSpecification.add(new SearchCriteria("verification", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idCard")) {
+                    genericSpecification.add(new SearchCriteria("idCard", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("idNumber")) {
+                    genericSpecification.add(new SearchCriteria("idNumber", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("verificationStatus")) {
+                    genericSpecification.add(new SearchCriteria("verificationStatus", filter.getFilterValue(), SearchOperation.MATCH));
+                }
+
+
+                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("isCorp")) {
+                    genericSpecification.add(new SearchCriteria("isCorp", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                }
+
+                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                    genericSpecification.add(new SearchCriteria("userId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("projectRoleId")) {
+                    genericSpecification.add(new SearchCriteria("projectRoleId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("lgaId")) {
+                    genericSpecification.add(new SearchCriteria("lgaId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("countryId")) {
+                    genericSpecification.add(new SearchCriteria("countryId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("userBankId")) {
+                    genericSpecification.add(new SearchCriteria("userBankId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+                if (filter.getFilterParameter().equalsIgnoreCase("organisationTypeId")) {
+                    genericSpecification.add(new SearchCriteria("organisationTypeId", filter.getFilterValue(), SearchOperation.EQUAL));
+                }
+            }
+        });
+
+//        request.getFilterDate().forEach(filter-> {
+//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+//                if (filter.getFromDate() != null) {
+//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getFromDate(), SearchOperation.GREATER_THAN_EQUAL));
+//                }
+//
+//                if (filter.getToDate() != null) {
+//                    if (filter.getFromDate() == null)
+//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
+//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getToDate(), SearchOperation.LESS_THAN_EQUAL));
+//                }
+//            }
+//        });
+
+
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+
+        return repository.findAll(genericSpecification, sortType);
+
+
+    }
+
+    public Page<Enumerator> getEntities(GetRequestDto request) {
+        Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
+                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
+        return repository.findAll(pageRequest);
+    }
+
 }
