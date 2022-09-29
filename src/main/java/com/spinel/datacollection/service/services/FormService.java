@@ -12,6 +12,7 @@ import com.spinel.datacollection.service.helper.SearchCriteria;
 import com.spinel.datacollection.service.helper.SearchOperation;
 import com.spinel.datacollection.service.helper.Validations;
 import com.spinel.datacollection.service.repositories.FormRepository;
+import com.spinel.framework.exceptions.BadRequestException;
 import com.spinel.framework.exceptions.ConflictException;
 import com.spinel.framework.exceptions.NotFoundException;
 import com.spinel.framework.models.User;
@@ -25,12 +26,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 
 /**
@@ -144,62 +142,69 @@ public class FormService {
         return form;
     }
 
-    public Page<Form> findPaginated(GetRequestDto request) {
+    public Page<Form> findFilteredPage(GetRequestDto request) {
         GenericSpecification<Form> genericSpecification = new GenericSpecification<Form>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        DateTimeFormatter formatter1 = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
-        SimpleDateFormat enUsFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-        SimpleDateFormat localFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-
-
-
-        request.getFilterCriteria().forEach(filter-> {
-            if (filter.getFilterParameter() != null) {
-                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
-                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("version")) {
-                    genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
-                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
-                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
-                    genericSpecification.add(new SearchCriteria("userId", filter.getFilterValue(), SearchOperation.EQUAL));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
-                    genericSpecification.add(new SearchCriteria("projectId", filter.getFilterValue(), SearchOperation.EQUAL));
-                }
+            if (request.getFilterCriteria() != null) {
+                request.getFilterCriteria().forEach(filter -> {
+                    if (filter.getFilterParameter() != null || filter.getFilterValue() != null) {
+                        if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                            genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("version")) {
+                            genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                            genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                            genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                            genericSpecification.add(new SearchCriteria("userId", filter.getFilterValue(), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
+                            genericSpecification.add(new SearchCriteria("projectId", filter.getFilterValue(), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("id")) {
+                            genericSpecification.add(new SearchCriteria("id", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                    }
+                });
             }
-        });
 
-//        request.getFilterDate().forEach(filter-> {
-//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
-//                if (filter.getFromDate() != null) {
-//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
-//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
-//                    LocalDateTime fromDate = LocalDateTime.from((filter.getFromDate().atZone(ZoneId.systemDefault()).toInstant()));
-//                    genericSpecification.add(new SearchCriteria("createdDate", fromDate, SearchOperation.GREATER_THAN_EQUAL));
-//
-//                }
-//
-//                if (filter.getToDate() != null) {
-//                    if (filter.getFromDate() == null)
-//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
-//                    LocalDateTime toDate = LocalDateTime.from(filter.getToDate().atZone(ZoneId.systemDefault()).toInstant());
-//                    genericSpecification.add(new SearchCriteria("createdDate", toDate, SearchOperation.LESS_THAN_EQUAL));
-//
-//                }
-//            }
-//        });
 
+            if (request.getFilterDate() != null) {
+
+                request.getFilterDate().forEach(filter -> {
+                    if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+                        if (filter.getStartDate() != null) {
+                            if (filter.getEndDate() != null && filter.getStartDate().isAfter(filter.getEndDate()))
+                                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "startDate can't be greater than endDate");
+                            LocalDate startDate = LocalDate.parse(filter.getStartDate().toString());
+                            genericSpecification.add(new SearchCriteria("createdDate", startDate, SearchOperation.GREATER_THAN_EQUAL));
+
+                        }
+
+                        if (filter.getEndDate() != null) {
+                            if (filter.getStartDate() == null)
+                                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "'startDate' must be included along with 'endDate' in the request");
+                            LocalDate endDate = LocalDate.parse(filter.getEndDate().toString());
+                            genericSpecification.add(new SearchCriteria("createdDate", endDate, SearchOperation.LESS_THAN_EQUAL));
+
+                        }
+                    }
+                });
+
+            }
+
+        if (request.getSortParameter() == null || request.getSortParameter().isEmpty()) {
+            request.setSortDirection("desc");
+            request.setSortParameter("id");
+        }
 
         Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
-                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+                ?  Sort.by(Sort.Order.asc(request.getSortParameter())) :   Sort.by(Sort.Order.desc(request.getSortParameter()));
 
         PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
 
@@ -208,63 +213,83 @@ public class FormService {
 
     }
 
-    public List<Form> findList(GetRequestDto request) {
+    public List<Form> findFilteredList(GetRequestDto request) {
         GenericSpecification<Form> genericSpecification = new GenericSpecification<Form>();
-
-        request.getFilterCriteria().forEach(filter-> {
-            if (filter.getFilterParameter() != null) {
-                if (filter.getFilterParameter().equalsIgnoreCase("name")) {
-                    genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("version")) {
-                    genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("description")) {
-                    genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
-                    genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
-                    genericSpecification.add(new SearchCriteria("userId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
-                }
-                if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
-                    genericSpecification.add(new SearchCriteria("projectId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
-                }
+            if (request.getFilterCriteria() != null ){
+                request.getFilterCriteria().forEach(filter -> {
+                    if (filter.getFilterParameter() != null || filter.getFilterValue() != null) {
+                        if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                            genericSpecification.add(new SearchCriteria("name", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("version")) {
+                            genericSpecification.add(new SearchCriteria("version", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                            genericSpecification.add(new SearchCriteria("description", filter.getFilterValue(), SearchOperation.MATCH));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                            genericSpecification.add(new SearchCriteria("isActive", Boolean.valueOf(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                            genericSpecification.add(new SearchCriteria("userId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
+                            genericSpecification.add(new SearchCriteria("projectId", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                        if (filter.getFilterParameter().equalsIgnoreCase("id")) {
+                            genericSpecification.add(new SearchCriteria("id", Long.parseLong(filter.getFilterValue()), SearchOperation.EQUAL));
+                        }
+                    }
+                });
             }
-        });
 
-//        request.getFilterDate().forEach(filter-> {
-//            if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
-//                if (filter.getFromDate() != null) {
-//                    if (filter.getToDate() != null && filter.getFromDate().isAfter(filter.getToDate()))
-//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"fromDate can't be greater than toDate");
-//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getFromDate(), SearchOperation.GREATER_THAN_EQUAL));
-//                }
-//
-//                if (filter.getToDate() != null) {
-//                    if (filter.getFromDate() == null)
-//                        throw new BadRequestException(CustomResponseCode.BAD_REQUEST,"'fromDate' must be included along with 'toDate' in the request");
-//                    genericSpecification.add(new SearchCriteria("createdDate", filter.getToDate(), SearchOperation.LESS_THAN_EQUAL));
-//                }
-//            }
-//        });
+            if (request.getFilterDate() != null) {
+                request.getFilterDate().forEach(filter -> {
+                    if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+                        if (filter.getStartDate() != null) {
+                            if (filter.getEndDate() != null && filter.getStartDate().isAfter(filter.getEndDate()))
+                                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "startDate can't be greater than endDate");
+                            LocalDate startDate = LocalDate.parse(filter.getStartDate().toString());
+                            genericSpecification.add(new SearchCriteria("createdDate", startDate, SearchOperation.GREATER_THAN_EQUAL));
 
+                        }
 
+                        if (filter.getEndDate() != null) {
+                            if (filter.getStartDate() == null)
+                                throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "'startDate' must be included along with 'endDate' in the request");
+                            LocalDate endDate = LocalDate.parse(filter.getEndDate().toString());
+                            genericSpecification.add(new SearchCriteria("createdDate", endDate, SearchOperation.LESS_THAN_EQUAL));
+
+                        }
+                    }
+                });
+            }
+
+        if (request.getSortParameter() == null || request.getSortParameter().isEmpty()) {
+            request.setSortDirection("desc");
+            request.setSortParameter("id");
+        }
         Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
-                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+                ? Sort.by(Sort.Order.asc(request.getSortParameter())) : Sort.by(Sort.Order.desc(request.getSortParameter()));
 
         return formRepository.findAll(genericSpecification, sortType);
-
 
     }
 
 
-    public Page<Form> getEntities(GetRequestDto request) {
+    public Page<Form> findUnfilteredPage(GetRequestDto request) {
+        if (request.getSortParameter() == null || request.getSortParameter().isEmpty()) {
+            request.setSortDirection("desc");
+            request.setSortParameter("id");
+        }
         Sort sortType = (request.getSortDirection() != null && request.getSortDirection().equalsIgnoreCase("asc"))
-                ?  Sort.by(Sort.Order.asc(request.getSortBy())) :   Sort.by(Sort.Order.desc(request.getSortBy()));
+                ?  Sort.by(Sort.Order.asc(request.getSortParameter())) :   Sort.by(Sort.Order.desc(request.getSortParameter()));
         PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize(), sortType);
         return formRepository.findAll(pageRequest);
+    }
+
+    public List<Form> findUnfilteredList() {
+        return formRepository.findAll();
     }
 
 

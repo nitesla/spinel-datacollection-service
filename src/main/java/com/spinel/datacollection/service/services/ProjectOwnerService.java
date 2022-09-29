@@ -41,6 +41,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -475,7 +476,7 @@ public class ProjectOwnerService {
         ActivateUserResponse activateUserResponse = userService.activateUser(request);
         ProjectOwner projectOwner = projectOwnerRepository.findProjectOwnerByUserId(activateUserResponse.getUserId());
         projectOwner.setIsActive(true);
-        projectOwner.setUpdatedDate(LocalDateTime.now());
+        projectOwner.setUpdatedDate(LocalDate.now());
         projectOwnerRepository.save(projectOwner);
         return activateUserResponse;
     }
