@@ -26,6 +26,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +49,9 @@ public class FormService {
 
     @Autowired
     private FormRepository formRepository;
+
+    @Autowired
+    private EntityManager entityManager;
     private final ModelMapper mapper;
     private final ObjectMapper objectMapper;
     private final Validations validations;
@@ -274,6 +283,12 @@ public class FormService {
 
         return formRepository.findAll(genericSpecification, sortType);
 
+//        List<Form> result = formRepository.findAll(genericSpecification, sortType);
+//        Map<String, Form> counting = (Map<String, Form>) result.stream().collect(Collectors.groupingBy(GetRequestDto::getGroupBy, Collectors.counting()));
+
+//        ((Integer)result.stream().filter(Objects::nonNull).map(GetRequestDto::getGroupBy).reduce(Integer.valueOf(0), Integer::sum));
+
+
     }
 
 
@@ -315,5 +330,153 @@ public class FormService {
 
     }
 
+    public List<Form> findGroupPage(GetRequestDto request) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery cq = cb.createQuery();
+
+        Root<Form> form = cq.from(Form.class);
+        List<Predicate> predicates = new ArrayList<Predicate>();
+
+        if (request.getFilterCriteria() != null) {
+            request.getFilterCriteria().forEach(filter -> {
+
+                if (filter.getFilterParameter() != null || filter.getFilterValue() != null) {
+                    if (filter.getFilterParameter().equalsIgnoreCase("name")) {
+                        predicates.add(cb.like(form.get("name"), filter.getFilterValue()));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("version")) {
+                        predicates.add(cb.like(form.get("version"), filter.getFilterValue()));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("description")) {
+                        predicates.add(cb.like(form.get("description"), filter.getFilterValue()));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("isActive")) {
+                        predicates.add(cb.equal(form.get("isActive"), Boolean.valueOf(filter.getFilterValue())));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("userId")) {
+                        predicates.add(cb.equal(form.get("userId"), filter.getFilterValue()));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("projectId")) {
+                        predicates.add(cb.equal(form.get("projectId"), filter.getFilterValue()));
+                    }
+                    if (filter.getFilterParameter().equalsIgnoreCase("id")) {
+                        predicates.add(cb.equal(form.get("id"), filter.getFilterValue()));
+                    }
+
+                }
+            });
+        }
+
+        if (request.getFilterDate() != null) {
+
+            request.getFilterDate().forEach(filter -> {
+                if (filter.getDateParameter() != null && filter.getDateParameter().equalsIgnoreCase("createdDate")) {
+                    if (filter.getStartDate() != null) {
+                        if (filter.getEndDate() != null && filter.getStartDate().isAfter(filter.getEndDate()))
+                            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "startDate can't be greater than endDate");
+                        LocalDate startDate = LocalDate.parse(filter.getStartDate().toString());
+                        predicates.add(cb.greaterThanOrEqualTo(form.get("createdDate"), startDate));
+
+                    }
+
+                    if (filter.getEndDate() != null) {
+                        if (filter.getStartDate() == null)
+                            throw new BadRequestException(CustomResponseCode.BAD_REQUEST, "'startDate' must be included along with 'endDate' in the request");
+                        LocalDate endDate = LocalDate.parse(filter.getEndDate().toString());
+                        predicates.add(cb.lessThanOrEqualTo(form.get("createdDate"), endDate));
+                    }
+                }
+            });
+        }
+
+        if (request.isPaginated() && request.isFiltered()) {
+
+            if (request.getGroupBy() != null || !request.getGroupBy().toString().isEmpty()) {
+                cq.select(form)
+                        .where(predicates.toArray(new Predicate[]{}))
+                        .groupBy(form.get(request.getGroupBy().getGroupParameter()));
+            } else {
+                cq.select(form)
+                        .where(predicates.toArray(new Predicate[]{}));
+            }
+
+
+            if (request.getTopCount() != null) {
+                return entityManager.createQuery(cq)
+                        .setFirstResult(request.getPage()) // offset
+                        .setMaxResults(request.getTopCount())
+                        .getResultList();
+            } else {
+                TypedQuery<Form> query = entityManager.createQuery(cq);
+                return query
+                        .setFirstResult(request.getPage()) // offset
+                        .setMaxResults(request.getPageSize())
+                        .getResultList();
+            }
+
+        } else if (!request.isPaginated() && request.isFiltered()) {
+            if (request.getGroupBy() != null) {
+                cq.select(form)
+                        .where(predicates.toArray(new Predicate[]{}))
+                        .groupBy(form.get(request.getGroupBy().getGroupParameter()));
+            } else {
+                cq.select(form)
+                        .where(predicates.toArray(new Predicate[]{}));
+            }
+
+
+            if (request.getTopCount() != null) {
+                return entityManager.createQuery(cq)
+                        .setMaxResults(request.getTopCount())
+                        .getResultList();
+            } else {
+                TypedQuery<Form> query = entityManager.createQuery(cq);
+                return query.getResultList();
+            }
+        } else if (request.isPaginated() && !request.isFiltered()) {
+            if (request.getGroupBy().getGroupParameter() != null || request.getGroupBy().getFunction() != null) {
+                cq.select(form)
+                        .groupBy(form.get(request.getGroupBy().getGroupParameter()));
+            } else {
+                cq.select(form);
+            }
+
+            if (request.getTopCount() != null) {
+                return entityManager.createQuery(cq)
+                        .setFirstResult(request.getPage()) // offset
+                        .setMaxResults(request.getTopCount())
+                        .getResultList();
+            } else {
+                TypedQuery<Form> query = entityManager.createQuery(cq);
+                return query
+                        .setFirstResult(request.getPage()) // offset
+                        .setMaxResults(request.getPageSize())
+                        .getResultList();
+            }
+        } else if (!request.isPaginated() && !request.isFiltered()) {
+//            if (request.getGroupBy().getGroupParameter() != null || request.getGroupBy().getFunction() != null) {
+//                cq.select(form)
+//                        .groupBy(form.get(request.getGroupBy().getGroupParameter()))
+//                        .orderBy(cb.desc(form.get(request.getSortParameter())));
+//            } else {
+//                cq.select(form);
+//            }
+//
+//
+//            if (request.getTopCount() != null) {
+//                return entityManager.createQuery(cq)
+//                        .setMaxResults(request.getTopCount())
+//                        .getResultList();
+//            } else {
+//                TypedQuery<Form> query = entityManager.createQuery(cq);
+//                return query.getResultList();
+
+            return formRepository.findAll();
+        }
+
+
+        return null;
+    }
 
 }
